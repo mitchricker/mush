@@ -165,13 +165,13 @@ Use it instead of directly querying hardware APIs when writing system-related co
 
 Example:
 
-    import mush._sys as sysinfo
+    import mush._sys as system
 
-    memory = sysinfo.mem_info()
+    memory = system.mem_info()
 
-    filesystem = sysinfo.fs_info("/")
+    filesystem = system.fs_info("/")
 
-    cpu = sysinfo.cpu_info()
+    cpu = system.cpu_info()
 
 Available helpers include:
 
