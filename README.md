@@ -1,8 +1,8 @@
-# Mush
+# mush
 
 A BusyBox-inspired Unix shell for MicroPython embedded devices.
 
-Mush provides a lightweight command-line environment for MicroPython boards, bringing familiar Unix-style utilities to resource-constrained hardware while keeping the full power of Python available.
+mush provides a lightweight command-line environment for MicroPython boards, bringing familiar Unix-style utilities to resource-constrained hardware while keeping the full power of Python available.
 
 ## Features
 
@@ -51,7 +51,7 @@ Mush provides a lightweight command-line environment for MicroPython boards, bri
 
 ## Usage
 
-Import Mush:
+Import mush:
 
     from mush import *
 
@@ -71,7 +71,7 @@ Run commands directly:
 
 ## Python Integration
 
-Mush commands are regular MicroPython functions. They can be used alongside normal Python code, allowing shell-style utilities and application logic to be combined in the same environment.
+mush commands are regular MicroPython functions. They can be used alongside normal Python code, allowing shell-style utilities and application logic to be combined in the same environment.
 
 Examples:
 
@@ -83,11 +83,11 @@ Examples:
 
     data = open("config.txt").read()
 
-Mush does not replace MicroPython but rather extends it with a familiar command-oriented interface.
+If you want mush commands to be always available on boot: you can save `from mush import *` to your `boot.py`.
 
 ## Design
 
-Mush is a collection of small Python modules designed for MicroPython environments.
+mush is a collection of small Python modules designed for MicroPython environments.
 
 Commands are intentionally lightweight and designed around embedded constraints:
 
