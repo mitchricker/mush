@@ -21,13 +21,9 @@ EXAMPLES
 
     nc("0.0.0.0", 1234, listen=True, raw=True)
 """
-
 import sys
 import time
-
 import mush._net as net
-
-
 def _write(buf, raw):
     if raw:
         try:
@@ -39,8 +35,6 @@ def _write(buf, raw):
             print(buf.decode(errors="ignore"), end="")
         except Exception:
             print(buf, end="")
-
-
 def _client(host, port, data, timeout, raw):
     s = None
     try:
@@ -50,47 +44,34 @@ def _client(host, port, data, timeout, raw):
             if isinstance(data, str):
                 data = data.encode()
             s.send(data)
-
         for chunk in net.recv_iter(s, timeout):
             _write(chunk, raw)
-
     finally:
         if s:
             net.safe_close(s)
-
-
 def _serve(conn, addr, timeout, raw):
     print("nc:", addr)
-
     for chunk in net.recv_iter(conn, timeout):
         _write(chunk, raw)
-
-
 def _server(host, port, timeout, raw):
     addr = net.resolve(host, port)
     s = None
-
     try:
         s = __import__("socket").socket()
         s.setsockopt(__import__("socket").SOL_SOCKET,
                       __import__("socket").SO_REUSEADDR, 1)
         s.bind(addr)
         s.listen(1)
-
         print("nc: listening on {}:{}".format(host, port))
-
         while True:
             conn, client = s.accept()
             try:
                 _serve(conn, client, timeout, raw)
             finally:
                 net.safe_close(conn)
-
     finally:
         if s:
             net.safe_close(s)
-
-
 def main(host, port, data=None, listen=False, timeout=2000, raw=False):
     if listen:
         return _server(host, port, timeout, raw)

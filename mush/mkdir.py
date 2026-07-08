@@ -12,10 +12,7 @@ DESCRIPTION
 EXAMPLES
     mkdir("data")
 """
-
 import os
-
-
 def main(path):
     try:
         os.mkdir(path)

@@ -11,9 +11,7 @@ DESCRIPTION
 EXAMPLES
     date()
 """
-
 import time
-
 def main():
     try:
         t = time.localtime()

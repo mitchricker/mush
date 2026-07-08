@@ -16,22 +16,16 @@ EXAMPLES
     cd("test")
     cd()
 """
-
 import os
-
 def main(path=None):
-
     if not path:
         print(os.getcwd())
         return
-
     if path == "~":
         path = "/"
-
     try:
         os.chdir(path)
     except OSError as e:
         print("cd: {}: {}".format(path, e))
         return
-
     print(os.getcwd())

@@ -14,7 +14,6 @@ EXAMPLES
 """
 import os
 import mush._fsio as fsio
-
 def main(src, dst):
     try:
         os.rename(src, dst)

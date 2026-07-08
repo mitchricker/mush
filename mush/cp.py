@@ -11,10 +11,7 @@ DESCRIPTION
 EXAMPLES
     cp("a.txt", "b.txt")
 """
-
 import mush._fsio as fsio
-
-
 def main(src, dst):
     f = None
     try:
