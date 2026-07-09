@@ -3,37 +3,42 @@ NAME
     gzip - compress files using gzip format
 
 SYNOPSIS
-    gzip(path, out=None)
+    gzip(file)
+    gzip(file, out)
 
 DESCRIPTION
-    Compresses PATH into gzip format.
+    Stream-based gzip compressor using MicroPython deflate.
 
-    If OUT is omitted, writes PATH + ".gz".
+    Compression support depends on firmware capabilities.
 
 EXAMPLES
-    gzip("firmware.bin")
-    gzip("log.txt", out="log.gz")
+    gzip("test.txt")
+
+    gzip("test.txt", "test.txt.gz")
 """
-import mush
 import deflate
-fsio = mush._load_internal("_fsio")
-_CHUNK = 256
 def main(path, out=None):
     if not path:
         print("gzip: missing file")
         return
+    if not hasattr(deflate, "compress"):
+        raise OSError(
+            "gzip compression not supported by this firmware"
+        )
     if out is None:
         out = path + ".gz"
-    write, close = fsio["write_stream"](out)
+    src = open(path, "rb")
     try:
-        # gzip wrapper
-        comp = deflate.DeflateIO(
-            write,
-            deflate.COMPRESS,
-            deflate.FORMAT_GZIP,
-        )
-        for chunk in fsio["read_chunks"](path, _CHUNK):
-            comp.write(chunk)
-        comp.close()
+        dst = open(out, "wb")
+        try:
+            data = src.read()
+            compressed = deflate.compress(
+                data,
+                deflate.GZIP,
+            )
+            dst.write(compressed)
+        finally:
+            dst.close()
     finally:
-        close()
+        src.close()
+    return out

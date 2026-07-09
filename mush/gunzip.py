@@ -3,21 +3,16 @@ NAME
     gunzip - decompress gzip files
 
 SYNOPSIS
-    gunzip(path, out=None)
+    gunzip(file)
+    gunzip(file, out)
 
 DESCRIPTION
-    Decompresses gzip files.
-
-    If OUT is omitted and PATH ends in .gz,
-    the suffix is removed.
+    Stream-based gzip decompressor using MicroPython deflate.
 
 EXAMPLES
-    gunzip("firmware.bin.gz")
+    gunzip("test.txt.gz")
 """
-import mush
 import deflate
-fsio = mush._load_internal("_fsio")
-_CHUNK = 256
 def main(path, out=None):
     if not path:
         print("gunzip: missing file")
@@ -27,20 +22,24 @@ def main(path, out=None):
             out = path[:-3]
         else:
             out = path + ".out"
-    write, close = fsio["write_stream"](out)
-    f = open(path, "rb")
+    src = open(path, "rb")
     try:
-        dec = deflate.DeflateIO(
-            f,
-            deflate.DECOMPRESS,
-            deflate.FORMAT_GZIP,
-        )
-        while True:
-            data = dec.read(_CHUNK)
-            if not data:
-                break
-            write(data)
-        dec.close()
+        dst = open(out, "wb")
+        try:
+            stream = deflate.DeflateIO(
+                src,
+                deflate.GZIP,
+            )
+            try:
+                while True:
+                    data = stream.read(256)
+                    if not data:
+                        break
+                    dst.write(data)
+            finally:
+                stream.close()
+        finally:
+            dst.close()
     finally:
-        f.close()
-        close()
+        src.close()
+    return out
