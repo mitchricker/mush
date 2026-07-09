@@ -43,7 +43,10 @@ class FileBuffer:
         try:
             for line in fsio["iter_lines"](source):
                 self.lines.append(
-                    line.decode("utf-8", "ignore")
+                    line.rstrip(b"\r").decode(
+                        "utf-8",
+                        "ignore",
+                    )
                 )
         except Exception:
             pass
@@ -74,18 +77,18 @@ class FileBuffer:
             self.lines = [""]
         self.dirty = True
     def insert_char(self, row, col, char):
-        s = self.lines[row]
+        line = self.lines[row]
         self.lines[row] = (
-            s[:col] +
+            line[:col] +
             char +
-            s[col:]
+            line[col:]
         )
         self.dirty = True
     def delete_char(self, row, col):
-        s = self.lines[row]
+        line = self.lines[row]
         self.lines[row] = (
-            s[:col] +
-            s[col + 1:]
+            line[:col] +
+            line[col + 1:]
         )
         self.dirty = True
 def _check_recovery(path):
@@ -95,28 +98,12 @@ def _check_recovery(path):
     except Exception:
         return None
     try:
-        answer = input(
-            "Recovery file found: {}\nRecover? [y/N]: ".format(tmp)
-        )
+        answer = input("Recovery file found: {}\nRecover? [y/N]: ".format(tmp))
         if answer.lower() == "y":
             return tmp
     except Exception:
         pass
     return None
-def _clear():
-    print(
-        ESC + "[2J" + ESC + "[H",
-        end="",
-    )
-def _move(row, col):
-    print(
-        "{}[{};{}H".format(
-            ESC,
-            row,
-            col,
-        ),
-        end="",
-    )
 def _read_key():
     c = sys.stdin.read(1)
     if c != ESC:
@@ -140,20 +127,17 @@ def _read_key():
         return "PGDN"
     return ""
 def _draw(buf, row, col, top, message=""):
-    _clear()
+    sys.stdout.write(ESC + "[2J" + ESC + "[H")
     for y in range(SCREEN_ROWS):
         n = top + y
         if n < buf.line_count():
-            print(
-                "{:<78}".format(
-                    buf.get(n)[:SCREEN_COLS]
-                )
-            )
+            line = buf.get(n)[:SCREEN_COLS]
         else:
-            print("")
-    print("-" * SCREEN_COLS)
+            line = ""
+        sys.stdout.write("{:<78}\r\n".format(line))
+    sys.stdout.write("-" * SCREEN_COLS + "\r\n")
     dirty = " [modified]" if buf.dirty else ""
-    print(
+    sys.stdout.write(
         "{}{} Ln {}/{} Col {} {}".format(
             buf.path,
             dirty,
@@ -163,10 +147,17 @@ def _draw(buf, row, col, top, message=""):
             message,
         )
     )
-    _move(
-        row - top + 1,
-        col + 1,
+    sys.stdout.write(
+        "{}[{};{}H".format(
+            ESC,
+            row - top + 1,
+            col + 1,
+        )
     )
+    try:
+        sys.stdout.flush()
+    except Exception:
+        pass
 def main(path):
     recovery = _check_recovery(path)
     buf = FileBuffer(path)
@@ -205,9 +196,7 @@ def main(path):
             elif key == CTRL_Q:
                 if buf.dirty:
                     try:
-                        answer = input(
-                            "Unsaved changes. Quit without saving? [y/N]: "
-                        )
+                        answer = input("Unsaved changes. Quit without saving? [y/N]: ")
                         if answer.lower() != "y":
                             continue
                     except Exception:
@@ -248,11 +237,11 @@ def main(path):
                     row + SCREEN_ROWS,
                 )
             elif key in ("\r", "\n"):
-                s = buf.get(row)
-                buf.lines[row] = s[:col]
+                line = buf.get(row)
+                buf.lines[row] = line[:col]
                 buf.insert_line(
                     row + 1,
-                    s[col:],
+                    line[col:],
                 )
                 row += 1
                 col = 0
@@ -264,9 +253,7 @@ def main(path):
                     )
                     col -= 1
                 elif row:
-                    col = len(
-                        buf.get(row - 1)
-                    )
+                    col = len(buf.get(row - 1))
                     buf.lines[row - 1] += buf.get(row)
                     buf.delete_line(row)
                     row -= 1
@@ -278,4 +265,8 @@ def main(path):
                 )
                 col += 1
     finally:
-        _clear()
+        sys.stdout.write(ESC + "[2J" + ESC + "[H")
+        try:
+            sys.stdout.flush()
+        except Exception:
+            pass
