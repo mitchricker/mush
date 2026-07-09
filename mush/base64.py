@@ -14,19 +14,23 @@ EXAMPLES
 
     base64("data.b64", decode=True)
 """
-
 import sys
 import mush
-
 fsio = mush._load_internal("_fsio")
-
 _B64 = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
-
-
+def _write(data):
+    try:
+        sys.stdout.buffer.write(data)
+    except Exception:
+        sys.stdout.write(data.decode())
+def _flush():
+    try:
+        sys.stdout.flush()
+    except Exception:
+        pass
 def _encode_block(block):
     while len(block) < 3:
         block += b"\x00"
-
     n = (
         (block[0] << 16)
         |
@@ -34,52 +38,36 @@ def _encode_block(block):
         |
         block[2]
     )
-
     return bytes((
         _B64[(n >> 18) & 63],
         _B64[(n >> 12) & 63],
         _B64[(n >> 6) & 63],
         _B64[n & 63],
     ))
-
-
 def _encode_stream(path):
     buf = b""
-
     for chunk in fsio["read_chunks"](path):
         buf += chunk
-
         while len(buf) >= 3:
             block = buf[:3]
             buf = buf[3:]
-
-            sys.stdout.buffer.write(
+            _write(
                 _encode_block(block)
             )
-
     if buf:
         pad = 3 - len(buf)
-
         encoded = bytearray(
             _encode_block(buf + b"\x00" * pad)
         )
-
         for i in range(pad):
             encoded[-(i + 1)] = ord("=")
-
-        sys.stdout.buffer.write(bytes(encoded))
-        
-    sys.stdout.buffer.write(b"\n")
-
-
+        _write(bytes(encoded))
+    _write(b"\n")
+    _flush()
 def _decode_value(c):
     if c == ord("="):
         return 0
-
-    # MicroPython-safe lookup
     return _B64.find(bytes((c,)))
-
-
 def _decode_block(block):
     vals = (
         _decode_value(block[0]),
@@ -87,7 +75,6 @@ def _decode_block(block):
         _decode_value(block[2]),
         _decode_value(block[3]),
     )
-
     n = (
         (vals[0] << 18)
         |
@@ -97,44 +84,37 @@ def _decode_block(block):
         |
         vals[3]
     )
-
     out = bytes((
         (n >> 16) & 255,
         (n >> 8) & 255,
         n & 255,
     ))
-
     if block[3] == ord("="):
         out = out[:-1]
-
     if block[2] == ord("="):
         out = out[:-1]
-
     return out
-
-
 def _decode_stream(path):
     buf = b""
-
     for chunk in fsio["read_chunks"](path):
         buf += chunk
-
-        # Remove whitespace from Base64 stream
         buf = b"".join(buf.split())
-
         while len(buf) >= 4:
             block = buf[:4]
             buf = buf[4:]
 
-            sys.stdout.buffer.write(
+            _write(
                 _decode_block(block)
             )
-
     if buf:
         raise ValueError("invalid Base64 length")
-
+    _flush()
 def main(path, decode=False):
+    if not path:
+        print("base64: missing file")
+        return
     if decode:
         _decode_stream(path)
     else:
         _encode_stream(path)
+    return path

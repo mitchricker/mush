@@ -1,7 +1,9 @@
 import gc
 import os
 
-
+__version__ = "0.2.0"
+__author__ = "Mitch Ricker"
+__license__ = "MIT"
 __path__ = ["/mush"]
 
 _COMMANDS = {}
