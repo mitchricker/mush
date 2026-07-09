@@ -14,7 +14,6 @@ mush provides a lightweight command-line environment for MicroPython boards, bri
 - [Usage](#usage)
 - [Available Commands](#available-commands)
 - [Python Integration](#python-integration)
-- [Creating Commands](#creating-commands)
 - [Internal Modules](#internal-modules)
 - [Requirements](#requirements)
 - [License](#license)
@@ -70,16 +69,16 @@ The design goals are:
 
 ## Networking
 
+- `wifi` *(requires MicroPython network support and wireless-capable hardware)*
 - `curl`
 - `ping`
 - `nc`
 - `nslookup`
 - `ntp`
-- `wifi`
 
 ## Compression
 
-- `gzip`
+- `gzip` *(firmware dependent; requires MicroPython deflate compression support)*
 - `gunzip`
 
 ## System Utilities
@@ -206,42 +205,6 @@ They can be used alongside normal Python code:
 To make mush commands available automatically on boot, add this to `boot.py`:
 
     from mush import *
-
-[Back to top](#mitchs-micro-shell-mush)
-
----
-
-# Creating Commands
-
-Adding a command is as simple as adding another Python module.
-
-Example:
-
-    mush/hello.py
-
-Contents:
-
-    __doc__ = """
-    NAME
-        hello - print a greeting
-
-    SYNOPSIS
-        hello(name)
-
-    EXAMPLES
-        hello("world")
-    """
-
-    def main(name="world"):
-        print("Hello, {}".format(name))
-
-The command becomes available immediately:
-
-    hello("world")
-
-Documentation is available through:
-
-    man("hello")
 
 [Back to top](#mitchs-micro-shell-mush)
 
