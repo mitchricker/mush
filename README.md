@@ -1,4 +1,4 @@
-# mush
+# Mitch's Micro Shell (mush)
 
 A BusyBox-inspired Unix shell for MicroPython embedded devices.
 
