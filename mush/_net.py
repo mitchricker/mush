@@ -32,9 +32,8 @@ def tls_wrap(sock, host=None):
         pass
     try:
         import ssl
-        if host:
-            return ssl.wrap_socket(sock, server_hostname=host)
-        return ssl.wrap_socket(sock)
+        ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        return ctx.wrap_socket(sock, server_hostname=host)
     except Exception:
         pass
     try:
