@@ -24,23 +24,21 @@ def udp_connect(host, port, timeout=2000):
     return _connect(host, port, socket.SOCK_DGRAM, timeout)
 def tls_wrap(sock, host=None):
     try:
-        import ussl
-        if host:
-            return ussl.wrap_socket(sock, server_hostname=host)
-        return ussl.wrap_socket(sock)
-    except Exception:
-        pass
-    try:
         import ssl
         ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-        return ctx.wrap_socket(sock, server_hostname=host)
+        return ctx.wrap_socket(sock, server_hostname=host,)
     except Exception:
-        pass
-    try:
-        sock.close()
-    except Exception:
-        pass
-    raise OSError("TLS not supported on this firmware")
+        try:
+            import ussl
+            if host:
+                return ussl.wrap_socket(sock, server_hostname=host,)
+            return ussl.wrap_socket(sock)
+        except Exception:
+            try:
+                sock.close()
+            except Exception:
+                pass
+            raise OSError("TLS not supported on this firmware")
 def recv_iter(sock, timeout=2000, chunk=256):
     start = time.ticks_ms()
     while True:

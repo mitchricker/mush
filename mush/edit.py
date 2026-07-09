@@ -167,24 +167,40 @@ def _draw(buf, row, col, top, message=""):
         row - top + 1,
         col + 1,
     )
-def main(path):
+def main(path=None):
+
+    if path is None:
+        try:
+            path = input("Filename: ").strip()
+        except Exception:
+            path = ""
+
+        if not path:
+            path = "untitled.txt"
+
     recovery = _check_recovery(path)
+
     buf = FileBuffer(path)
+
     if recovery:
         buf.load(recovery)
         buf.dirty = True
     else:
         buf.load()
+
     row = 0
     col = 0
     top = 0
     message = ""
+
     try:
         while True:
             if row < top:
                 top = row
+
             if row >= top + SCREEN_ROWS:
                 top = row - SCREEN_ROWS + 1
+
             _draw(
                 buf,
                 row,
@@ -192,16 +208,21 @@ def main(path):
                 top,
                 message,
             )
+
             message = ""
+
             key = _read_key()
+
             if key == CTRL_S:
                 try:
                     buf.save()
                     message = "saved"
                 except Exception as e:
                     message = "save failed: {}".format(e)
+
             elif key == CTRL_L:
                 continue
+
             elif key == CTRL_Q:
                 if buf.dirty:
                     try:
@@ -264,9 +285,7 @@ def main(path):
                     )
                     col -= 1
                 elif row:
-                    col = len(
-                        buf.get(row - 1)
-                    )
+                    col = len(buf.get(row - 1))
                     buf.lines[row - 1] += buf.get(row)
                     buf.delete_line(row)
                     row -= 1
