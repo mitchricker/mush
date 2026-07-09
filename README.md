@@ -250,8 +250,6 @@ Commands such as:
 - `tail`
 - `xxd`
 - `sha256sum`
-- `gzip`
-- `gunzip`
 
 use these helpers to minimize memory usage.
 
