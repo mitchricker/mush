@@ -4,52 +4,122 @@ A BusyBox-inspired Unix shell for MicroPython embedded devices.
 
 mush provides a lightweight command-line environment for MicroPython boards, bringing familiar Unix-style utilities to resource-constrained hardware while keeping the full power of Python available.
 
-## Features
+---
 
-- Filesystem tools:
-  - ls
-  - cd
-  - pwd
-  - cp
-  - mv
-  - rm
-  - mkdir
-  - touch
-  - stat
-  - tree
+# Table of Contents
 
-- Text processing:
-  - cat
-  - head
-  - tail
-  - grep
-  - wc
-  - uniq
-  - base64
-  - xxd
-  - sha256sum
+- [Overview](#overview)
+- [Features](#features)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Available Commands](#available-commands)
+- [Python Integration](#python-integration)
+- [Creating Commands](#creating-commands)
+- [Internal Modules](#internal-modules)
+- [Requirements](#requirements)
+- [License](#license)
 
-- Networking:
-  - curl
-  - ping
-  - nc
-  - nslookup
-  - ntp
-  - wifi
+---
 
-- System utilities:
-  - uname
-  - lscpu
-  - free
-  - df
-  - sysinfo
-  - date
-  - reboot
+# Overview
 
-- Built-in text editor:
-  - edit
+mush is a collection of small Python modules designed to provide a familiar Unix-style environment on MicroPython devices.
 
-## Usage
+It is inspired by BusyBox: commands are lightweight, independent modules that share common internal helpers.
+
+The design goals are:
+
+- Low memory usage
+- Streaming file operations
+- Simple extension model
+- Hardware-friendly behavior
+- Python-native integration
+
+[Back to top](#mitchs-micro-shell-mush)
+
+---
+
+# Features
+
+## Filesystem Utilities
+
+- `ls`
+- `cd`
+- `pwd`
+- `cp`
+- `mv`
+- `rm`
+- `mkdir`
+- `touch`
+- `stat`
+- `tree`
+
+## Text Processing
+
+- `cat`
+- `head`
+- `tail`
+- `grep`
+- `wc`
+- `uniq`
+- `cut`
+- `strings`
+- `base64`
+- `xxd`
+- `sha256sum`
+
+## Networking
+
+- `curl`
+- `ping`
+- `nc`
+- `nslookup`
+- `ntp`
+- `wifi`
+
+## Compression
+
+- `gzip`
+- `gunzip`
+
+## System Utilities
+
+- `uname`
+- `lscpu`
+- `free`
+- `df`
+- `sysinfo`
+- `date`
+- `reboot`
+
+## Editor
+
+- `edit`
+
+[Back to top](#mitchs-micro-shell-mush)
+
+---
+
+# Installation
+
+Copy the `mush` package directory onto your MicroPython filesystem.
+
+Example layout:
+
+    /mush
+        __init__.py
+        ls.py
+        grep.py
+        curl.py
+        wifi.py
+
+Commands are discovered automatically when mush starts.
+
+[Back to top](#mitchs-micro-shell-mush)
+
+---
+
+# Usage
 
 Import mush:
 
@@ -69,44 +139,28 @@ Run commands directly:
     wifi()
     curl("https://example.com")
 
-## Python Integration
+[Back to top](#mitchs-micro-shell-mush)
 
-mush commands are regular MicroPython functions. They can be used alongside normal Python code, allowing shell-style utilities and application logic to be combined in the same environment.
+---
 
-Examples:
+# Available Commands
 
-    files = ls()
-    wifi("status")
+Commands are implemented as individual Python modules.
 
-    for item in find("/"):
-        print(item)
+Each command provides:
 
-    data = open("config.txt").read()
+- A `main()` function
+- `__doc__` documentation used by `man()`
+- A callable interface through mush
 
-If you want mush commands to be always available on boot: you can save `from mush import *` to your `boot.py`.
+Commands are loaded on demand to reduce memory usage.
 
-## Design
+Example command layout:
 
-mush is a collection of small Python modules designed for MicroPython environments.
+    mush/
+        hello.py
 
-Commands are intentionally lightweight and designed around embedded constraints:
-
-- Streaming file operations
-- Minimal memory usage
-- Simple extension model
-- Unix-inspired command interface
-
-Adding a new command is as simple as adding another module.
-
-## Creating Your Own Commands
-
-mush commands are simple MicroPython modules. To create a new command, add a Python file to the mush command directory.
-
-For example, create:
-
-    mush/hello.py
-
-with:
+Example command:
 
     __doc__ = """
     NAME
@@ -122,105 +176,222 @@ with:
     def main(name="world"):
         print("Hello, {}".format(name))
 
-The command will then be available through mush:
+The command becomes available automatically:
 
     hello("world")
 
-Command documentation is provided through `man()`:
+Command documentation is available through:
 
     man("hello")
 
-## Internal Modules
+[Back to top](#mitchs-micro-shell-mush)
 
-mush provides internal helper modules for common functionality. These modules are intended to keep commands small, consistent, and compatible with embedded hardware constraints.
+---
 
-### _fsio.py
+# Python Integration
 
-`_fsio.py` provides streaming filesystem operations.
+mush commands are regular MicroPython functions.
 
-Use it when working with files that may be larger than available RAM.
+They can be used alongside normal Python code:
+
+    files = ls()
+
+    wifi("status")
+
+    for item in find("/"):
+        print(item)
+
+    data = open("config.txt").read()
+
+To make mush commands available automatically on boot, add this to `boot.py`:
+
+    from mush import *
+
+[Back to top](#mitchs-micro-shell-mush)
+
+---
+
+# Creating Commands
+
+Adding a command is as simple as adding another Python module.
 
 Example:
 
-    import mush._fsio as fsio
+    mush/hello.py
 
-    for chunk in fsio.read_chunks("large_file.bin"):
+Contents:
+
+    __doc__ = """
+    NAME
+        hello - print a greeting
+
+    SYNOPSIS
+        hello(name)
+
+    EXAMPLES
+        hello("world")
+    """
+
+    def main(name="world"):
+        print("Hello, {}".format(name))
+
+The command becomes available immediately:
+
+    hello("world")
+
+Documentation is available through:
+
+    man("hello")
+
+[Back to top](#mitchs-micro-shell-mush)
+
+---
+
+# Internal Modules
+
+mush provides internal helper modules used by commands.
+
+These modules are not directly imported by commands. Instead, they are loaded through the mush internal loader:
+
+    helper = mush._load_internal("_name")
+
+The loader returns a dictionary of helper functions. This keeps internal dependencies lightweight and consistent across commands.
+
+---
+
+## `_fsio`
+
+`_fsio` provides streaming filesystem helpers for commands that need to process files without loading entire files into memory.
+
+Commands access this module through the mush internal loader:
+
+    fsio = mush._load_internal("_fsio")
+
+Example:
+
+    for chunk in fsio["read_chunks"]("large_file.bin"):
         process(chunk)
 
-Available helpers include:
+Available helpers:
 
-- read_chunks()
-- write_stream()
-- copy()
-- atomic_write()
-- iter_lines()
+- `read_chunks`
+- `write_stream`
+- `copy`
+- `atomic_write`
+- `iter_lines`
 
-Commands such as `cat`, `head`, `tail`, `xxd`, and `sha256sum` use these helpers to avoid loading entire files into memory.
+Commands such as:
 
-### _sys.py
+- `cat`
+- `head`
+- `tail`
+- `xxd`
+- `sha256sum`
+- `gzip`
+- `gunzip`
 
-`_sys.py` provides system information helpers.
+use these helpers to minimize memory usage.
 
-Use it instead of directly querying hardware APIs when writing system-related commands.
+---
 
-Example:
+## `_sys`
 
-    import mush._sys as system
+`_sys` provides system information helpers for commands that report memory, CPU, filesystem, and hardware information.
 
-    memory = system.mem_info()
+Commands access this module through the mush internal loader:
 
-    filesystem = system.fs_info("/")
-
-    cpu = system.cpu_info()
-
-Available helpers include:
-
-- mem_info()
-- fs_info()
-- cpu_info()
-- uname_info()
-- format_size()
-- percent()
-- summary()
-
-Commands such as `df`, `lscpu`, and `sysinfo` build on these functions.
-
-### _net.py
-
-`_net.py` provides shared networking primitives for mush commands.
-
-It handles common socket operations so individual commands do not need to duplicate connection setup, DNS resolution, timeout handling, TLS support or cleanup.
+    system = mush._load_internal("_sys")
 
 Example:
 
-    import mush._net as net
+    memory = system["mem_info"]()
 
-    sock = net.tcp_connect("example.com", 80)
+    filesystem = system["fs_info"]("/")
+
+    cpu = system["cpu_info"]()
+
+Available helpers:
+
+- `mem_info`
+- `fs_info`
+- `cpu_info`
+- `reset_cause`
+- `uname_info`
+- `format_size`
+- `percent`
+- `summary`
+
+Commands such as:
+
+- `df`
+- `free`
+- `lscpu`
+- `sysinfo`
+
+use these helpers.
+
+---
+
+## `_net`
+
+`_net` provides shared networking primitives for commands that require sockets, DNS resolution, TLS support, or connection cleanup.
+
+Commands access this module through the mush internal loader:
+
+    net = mush._load_internal("_net")
+
+Example:
+
+    sock = net["tcp_connect"]("example.com", 80)
 
     sock.send(b"GET / HTTP/1.0\r\n\r\n")
 
-    for data in net.recv_iter(sock):
+    for data in net["recv_iter"](sock):
         print(data)
 
-    net.safe_close(sock)
+    net["safe_close"](sock)
 
-Available helpers include:
+Available helpers:
 
-- resolve()
-- tcp_connect()
-- udp_connect()
-- tls_wrap()
-- recv_iter()
-- safe_close()
+- `resolve`
+- `tcp_connect`
+- `udp_connect`
+- `tls_wrap`
+- `recv_iter`
+- `safe_close`
 
-Networking commands such as `curl`, `ping`, `nc`, and `nslookup` use this layer to share common socket behavior.
+Commands such as:
 
-## Requirements
+- `curl`
+- `ping`
+- `nc`
+- `nslookup`
 
-- MicroPython
+use this layer to share common socket behavior.
+
+[Back to top](#mitchs-micro-shell-mush)
+
+---
+
+# Requirements
+
+- MicroPython v1.21 or newer
 - Filesystem support
 - Network-capable hardware for networking features
 
-## License
+Optional MicroPython modules:
 
-MIT
+- `network`
+- `ssl`
+- `deflate`
+- `machine`
+
+[Back to top](#mitchs-micro-shell-mush)
+
+---
+
+# License
+
+MIT License
+
+[Back to top](#mitchs-micro-shell-mush)
