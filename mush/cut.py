@@ -45,10 +45,8 @@ def _parse_list(spec):
     return result
 def _select_bytes(data, ranges):
     out = bytearray()
-
     for start, end in ranges:
         start -= 1
-
         if end is None:
             out.extend(data[start:])
         else:
@@ -57,11 +55,9 @@ def _select_bytes(data, ranges):
 def _select_fields(line, fields, delimiter):
     parts = line.split(delimiter)
     selected = []
-
     for start, end in fields:
         if end is None:
             end = len(parts)
-
         for index in range(
             start - 1,
             min(end, len(parts))
@@ -80,9 +76,7 @@ def main(path, fields=None, delimiter="\t", byte_ranges=None, out=None):
         print("cut: missing file")
         return
     if fields is None and byte_ranges is None:
-        print(
-            "cut: specify fields= or byte_ranges="
-        )
+        print("cut: specify fields= or byte_ranges=")
         return
     close_out = False
     if isinstance(out, str):
@@ -96,7 +90,6 @@ def main(path, fields=None, delimiter="\t", byte_ranges=None, out=None):
         if byte_ranges is not None:
             byte_ranges_parsed = _parse_list(byte_ranges)
         for line in fsio["iter_lines"](path):
-
             if byte_ranges_parsed is not None:
                 result = _select_bytes(
                     line,
@@ -110,9 +103,7 @@ def main(path, fields=None, delimiter="\t", byte_ranges=None, out=None):
                     delimiter,
                 )
             if out:
-                out.write(
-                    result + "\n"
-                )
+                out.write(result + "\n")
             else:
                 print(result)
     finally:
