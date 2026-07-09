@@ -21,42 +21,29 @@ EXAMPLES
     rm("dir1", "dir2", recursive=True)
     rm("dir", recursive=True, interactive=True)
 """
-
 import os
-
-
 def _confirm(path):
     try:
         return input("delete {}? [y/N]: ".format(path)).lower() == "y"
     except Exception:
         return False
-
-
 def _rm_file(path):
     try:
         os.remove(path)
         print("removed:", path)
     except Exception as e:
         print("rm failed:", path, "->", e)
-
-
 def _rm_dir(path, interactive):
     try:
         for entry in os.listdir(path):
             full = path + "/" + entry
-
             if interactive and not _confirm(full):
                 continue
-
             _rm(full, True, interactive)
-
         os.rmdir(path)
         print("removed dir:", path)
-
     except Exception as e:
         print("rmdir failed:", path, "->", e)
-
-
 def _rm(path, recursive=False, interactive=False):
     try:
         is_dir = False
@@ -64,7 +51,6 @@ def _rm(path, recursive=False, interactive=False):
             is_dir = bool(os.stat(path)[0] & 0x4000)
         except Exception:
             pass
-
         if is_dir:
             if recursive:
                 _rm_dir(path, interactive)
@@ -74,15 +60,11 @@ def _rm(path, recursive=False, interactive=False):
             if interactive and not _confirm(path):
                 return
             _rm_file(path)
-
     except Exception as e:
         print("rm error:", path, "->", e)
-
-
 def main(*paths, recursive=False, interactive=False):
     if not paths:
         print("usage: rm(path, ...)")
         return
-
     for path in paths:
         _rm(path, recursive, interactive)

@@ -13,9 +13,8 @@ DESCRIPTION
 EXAMPLES
     reboot()
 """
-
 import machine
-
 def main():
     print("Rebooting...")
     machine.reset()
+

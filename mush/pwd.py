@@ -11,9 +11,7 @@ DESCRIPTION
 EXAMPLES
     pwd()
 """
-
 import os
-
 def main():
     try:
         print(os.getcwd())

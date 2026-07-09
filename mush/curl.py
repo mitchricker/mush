@@ -19,7 +19,8 @@ EXAMPLES
     curl("https://example.com/api", method="POST", data="x=1")
     curl("https://example.com", method="HEAD")
 """
-import mush._net as net
+import mush
+net = mush._load_internal("_net")
 def _parse_url(url):
     if url.startswith("https://"):
         return "https", url[8:]
@@ -42,9 +43,9 @@ def main(url, method="GET", data=None, timeout=2000):
         host, path, port = _parse_host_path(rest)
         if port is None:
             port = 443 if scheme == "https" else 80
-        sock = net.tcp_connect(host, port, timeout)
+        sock = net["tcp_connect"](host, port, timeout)
         if scheme == "https":
-            sock = net.tls_wrap(sock, host)
+            sock = net["tls_wrap"](sock, host)
         method = method.upper()
         if data is not None and isinstance(data, str):
             data = data.encode()
@@ -69,4 +70,4 @@ def main(url, method="GET", data=None, timeout=2000):
         print("curl:", e)
     finally:
         if sock:
-            net.safe_close(sock)
+            net["safe_close"](sock)

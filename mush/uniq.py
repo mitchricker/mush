@@ -12,25 +12,19 @@ DESCRIPTION
 EXAMPLES
     uniq("log.txt")
 """
-
-import mush._fsio as fsio
-
-
+import mush
+fsio = mush._load_internal("_fsio")
 def _print_line(line):
     try:
         print(line.decode("utf-8", "ignore"))
     except Exception:
         print(line)
-
-
 def main(path):
     previous = None
-
     try:
-        for line in fsio.iter_lines(path):
+        for line in fsio["iter_lines"](path):
             if line != previous:
                 _print_line(line)
                 previous = line
-
     except OSError as e:
         print("uniq: {}: {}".format(path, e))

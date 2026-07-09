@@ -3,81 +3,138 @@ NAME
     base64 - encode/decode files using Base64
 
 SYNOPSIS
-    base64 encode file
-    base64 decode file
+    base64(file)
+    base64(file, decode=True)
 
 DESCRIPTION
     Stream-based Base64 encoder/decoder.
 
-    Designed for MicroPython constraints:
-    - no full file buffering
-    - chunked processing
-    - minimal RAM usage
-
 EXAMPLES
-    base64 encode image.bin
+    base64("image.bin")
 
-    base64 decode data.b64
+    base64("data.b64", decode=True)
 """
+
 import sys
-import mush._fsio as fsio
+import mush
+
+fsio = mush._load_internal("_fsio")
+
 _B64 = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+
+
 def _encode_block(block):
-    out = []
-    # pad to 3 bytes
     while len(block) < 3:
         block += b"\x00"
-    n = (block[0] << 16) + (block[1] << 8) + block[2]
-    out.append(_B64[(n >> 18) & 63])
-    out.append(_B64[(n >> 12) & 63])
-    out.append(_B64[(n >> 6) & 63])
-    out.append(_B64[n & 63])
-    return out
+
+    n = (
+        (block[0] << 16)
+        |
+        (block[1] << 8)
+        |
+        block[2]
+    )
+
+    return bytes((
+        _B64[(n >> 18) & 63],
+        _B64[(n >> 12) & 63],
+        _B64[(n >> 6) & 63],
+        _B64[n & 63],
+    ))
+
+
 def _encode_stream(path):
     buf = b""
-    for chunk in fsio.read_chunks(path):
+
+    for chunk in fsio["read_chunks"](path):
         buf += chunk
+
         while len(buf) >= 3:
             block = buf[:3]
             buf = buf[3:]
-            for b in _encode_block(block):
-                sys.stdout.buffer.write(bytes([b]))
-    # final padding
+
+            sys.stdout.buffer.write(
+                _encode_block(block)
+            )
+
     if buf:
-        pad_len = 3 - len(buf)
-        block = buf + b"\x00" * pad_len
-        encoded = _encode_block(block)
-        for i in range(pad_len):
+        pad = 3 - len(buf)
+
+        encoded = bytearray(
+            _encode_block(buf + b"\x00" * pad)
+        )
+
+        for i in range(pad):
             encoded[-(i + 1)] = ord("=")
+
         sys.stdout.buffer.write(bytes(encoded))
+        
+    sys.stdout.buffer.write(b"\n")
+
+
+def _decode_value(c):
+    if c == ord("="):
+        return 0
+
+    # MicroPython-safe lookup
+    return _B64.find(bytes((c,)))
+
+
 def _decode_block(block):
-    vals = []
-    for c in block:
-        if c == ord("="):
-            vals.append(0)
-        else:
-            vals.append(_B64.index(c))
-    n = (vals[0] << 18) + (vals[1] << 12) + (vals[2] << 6) + vals[3]
-    return bytes([
+    vals = (
+        _decode_value(block[0]),
+        _decode_value(block[1]),
+        _decode_value(block[2]),
+        _decode_value(block[3]),
+    )
+
+    n = (
+        (vals[0] << 18)
+        |
+        (vals[1] << 12)
+        |
+        (vals[2] << 6)
+        |
+        vals[3]
+    )
+
+    out = bytes((
         (n >> 16) & 255,
         (n >> 8) & 255,
         n & 255,
-    ])
+    ))
+
+    if block[3] == ord("="):
+        out = out[:-1]
+
+    if block[2] == ord("="):
+        out = out[:-1]
+
+    return out
+
+
 def _decode_stream(path):
     buf = b""
-    for chunk in fsio.read_chunks(path):
+
+    for chunk in fsio["read_chunks"](path):
         buf += chunk
-        # strip whitespace
+
+        # Remove whitespace from Base64 stream
         buf = b"".join(buf.split())
+
         while len(buf) >= 4:
             block = buf[:4]
             buf = buf[4:]
-            decoded = _decode_block(block)
-            sys.stdout.buffer.write(decoded)
-def main(mode, path):
-    if mode == "encode":
-        _encode_stream(path)
-    elif mode == "decode":
+
+            sys.stdout.buffer.write(
+                _decode_block(block)
+            )
+
+    if buf:
+        raise ValueError("invalid Base64 length")
+
+def main(path, decode=False):
+    if decode:
         _decode_stream(path)
     else:
-        print("usage: base64 encode|decode file")
+        _encode_stream(path)

@@ -14,107 +14,49 @@ EXAMPLES
 
     sysinfo("/")
 """
-import mush._sys as sysinfo
+import mush
+
+sysinfo = mush._load_internal("_sys")
+
 def main(path="/"):
     info = sysinfo.summary(path)
     uname = info["uname"]
     cpu = info["cpu"]
     mem = info["memory"]
     fs = info["filesystem"]
+
     print("Mitch's Micro Shell")
     print("----------------")
+
     if uname:
-        print(
-            "System:     {}".format(
-                uname.get("sysname", "")
-            )
-        )
-        print(
-            "Release:    {}".format(
-                uname.get("release", "")
-            )
-        )
-        print(
-            "Machine:    {}".format(
-                uname.get("machine", "")
-            )
-        )
+        print("System:     {}".format(uname.get("sysname", "")))
+        print("Release:    {}".format(uname.get("release", "")))
+        print("Machine:    {}".format(uname.get("machine", "")))
+
     print()
-    print(
-        "Platform:   {}".format(
-            cpu.get("platform")
-        )
-    )
-    print(
-        "Arch:       {}".format(
-            cpu.get("arch")
-        )
-    )
+    print("Platform:   {}".format(cpu.get("platform")))
+    print("Arch:       {}".format(cpu.get("arch")))
+
     if cpu.get("freq"):
         freq = cpu["freq"]
-
         if isinstance(freq, int) and freq > 1000000:
-            freq = "{} MHz".format(
-                freq // 1000000
-            )
-        print(
-            "CPU:        {}".format(
-                freq
-            )
-        )
+            freq = "{} MHz".format(freq // 1000000)
+        print("CPU:        {}".format(freq))
+
     print()
-    print(
-        "Memory:"
-    )
-    print(
-        "  Total:    {}".format(
-            sysinfo.format_size(
-                mem["total"]
-            )
-        )
-    )
-    print(
-        "  Used:     {}".format(
-            sysinfo.format_size(
-                mem["allocated"]
-            )
-        )
-    )
-    print(
-        "  Free:     {}".format(
-            sysinfo.format_size(
-                mem["free"]
-            )
-        )
-    )
+    print("Memory:")
+    print("  Total:    {}".format(sysinfo.format_size(mem["total"])))
+    print("  Used:     {}".format(sysinfo.format_size(mem["allocated"])))
+    print("  Free:     {}".format(sysinfo.format_size(mem["free"])))
+
     if fs:
         print()
-
-        print(
-            "Filesystem:"
-        )
-        print(
-            "  Total:    {}".format(
-                sysinfo.format_size(
-                    fs["total"]
-                )
-            )
-        )
+        print("Filesystem:")
+        print("  Total:    {}".format(sysinfo.format_size(fs["total"])))
         print(
             "  Used:     {} ({}%)".format(
-                sysinfo.format_size(
-                    fs["used"]
-                ),
-                sysinfo.percent(
-                    fs["used"],
-                    fs["total"],
-                ),
+                sysinfo.format_size(fs["used"]),
+                sysinfo.percent(fs["used"], fs["total"]),
             )
         )
-        print(
-            "  Free:     {}".format(
-                sysinfo.format_size(
-                    fs["free"]
-                )
-            )
-        )
+        print("  Free:     {}".format(sysinfo.format_size(fs["free"])))

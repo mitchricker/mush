@@ -11,12 +11,13 @@ DESCRIPTION
 EXAMPLES
     cp("a.txt", "b.txt")
 """
-import mush._fsio as fsio
+import mush
+fsio = mush._load_internal("_fsio")
 def main(src, dst):
     f = None
     try:
         f = open(dst, "wb")
-        for b in fsio.read_chunks(src):
+        for b in fsio["read_chunks"](src):
             f.write(b)
     finally:
         if f:

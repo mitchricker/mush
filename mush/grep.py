@@ -19,10 +19,11 @@ EXAMPLES
     grep("warning", "log.txt", ignore_case=True)
 """
 import re
-import mush._fsio as fsio
+import mush
+fsio = mush._load_internal("_fsio")
 def _grep_file(regex, path):
     try:
-        for lineno, line in enumerate(fsio.iter_lines(path), 1):
+        for lineno, line in enumerate(fsio["iter_lines"](path), 1):
             try:
                 text = line.decode()
             except Exception:

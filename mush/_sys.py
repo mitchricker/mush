@@ -64,7 +64,6 @@ def uname_info():
             "version": "",
             "machine": "",
         }
-
 def format_size(size):
     units = (
         "B",
@@ -93,5 +92,4 @@ def summary(path="/"):
         info["filesystem"] = fs_info(path)
     except Exception:
         info["filesystem"] = None
-
     return info

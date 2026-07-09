@@ -13,7 +13,8 @@ EXAMPLES
     sha256sum("a.txt", "b.txt")
 """
 import hashlib
-import mush._fsio as fsio
+import mush
+fsio = mush._load_internal("_fsio")
 def _hex(data):
     out = ""
     for b in data:
@@ -21,7 +22,7 @@ def _hex(data):
     return out
 def _sha256(path):
     h = hashlib.sha256()
-    for chunk in fsio.read_chunks(path):
+    for chunk in fsio["read_chunks"](path):
         h.update(chunk)
     return _hex(h.digest())
 def main(*paths):
