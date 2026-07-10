@@ -23,17 +23,37 @@ import mush
 fsio = mush._load_internal("_fsio")
 def _grep_file(regex, path):
     try:
-        for lineno, line in enumerate(fsio["iter_lines"](path), 1):
+        for lineno, item in enumerate(
+            fsio["iter_lines"](path),
+            1,
+        ):
+            line, terminated = item
             try:
                 text = line.decode()
             except Exception:
                 text = str(line)
             if regex.search(text):
-                print("{}:{}:{}".format(path, lineno, text))
+                print(
+                    "{}:{}:{}".format(
+                        path,
+                        lineno,
+                        text,
+                    )
+                )
     except OSError as e:
-        print("grep: {}: {}".format(path, e))
+        print(
+            "grep: {}: {}".format(
+                path,
+                e,
+            )
+        )
     except Exception as e:
-        print("grep: {}: {}".format(path, e))
+        print(
+            "grep: {}: {}".format(
+                path,
+                e,
+            )
+        )
 def main(pattern, *paths, ignore_case=False):
     if not paths:
         print("usage: grep(pattern, path, ...)")
@@ -42,9 +62,15 @@ def main(pattern, *paths, ignore_case=False):
     if ignore_case:
         flags |= re.IGNORECASE
     try:
-        regex = re.compile(pattern, flags)
+        regex = re.compile(
+            pattern,
+            flags,
+        )
     except Exception as e:
         print("grep: invalid pattern: {}".format(e))
         return
     for path in paths:
-        _grep_file(regex, path)
+        _grep_file(
+            regex,
+            path,
+        )
