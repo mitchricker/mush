@@ -55,13 +55,34 @@ def iter_lines(path):
     buf = b""
     for chunk in read_chunks(path):
         start = 0
-
         for i in range(len(chunk)):
             if chunk[i] == 10:  # '\n'
-                yield buf + chunk[start:i]
+                yield buf + chunk[start:i], True
                 buf = b""
                 start = i + 1
         if start < len(chunk):
             buf += chunk[start:]
     if buf:
-        yield buf
+        yield buf, False
+def iter_lines_reverse(path, chunk=_CHUNK):
+    f = open(path, "rb")
+    try:
+        f.seek(0, 2)
+        pos = f.tell()
+        buf = b""
+        while pos > 0:
+            size = min(chunk, pos)
+            pos -= size
+            f.seek(pos)
+            data = f.read(size)
+            for i in range(len(data) - 1, -1, -1):
+                if data[i] == 10:  # '\n'
+                    if buf:
+                        yield buf[::-1]
+                        buf = b""
+                else:
+                    buf += bytes((data[i],))
+        if buf:
+            yield buf[::-1]
+    finally:
+        f.close()

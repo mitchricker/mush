@@ -22,9 +22,14 @@ def _print_line(line):
 def main(path):
     previous = None
     try:
-        for line in fsio["iter_lines"](path):
+        for line, terminated in fsio["iter_lines"](path):
             if line != previous:
                 _print_line(line)
                 previous = line
     except OSError as e:
-        print("uniq: {}: {}".format(path, e))
+        print(
+            "uniq: {}: {}".format(
+                path,
+                e,
+            )
+        )

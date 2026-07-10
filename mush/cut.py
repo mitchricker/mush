@@ -20,6 +20,7 @@ EXAMPLES
     cut("passwd", fields="1,3", delimiter=":")
     cut("file.txt", byte_ranges="1-10")
 """
+import sys
 import mush
 fsio = mush._load_internal("_fsio")
 def _parse_list(spec):
@@ -30,14 +31,8 @@ def _parse_list(spec):
             continue
         if "-" in part:
             a, b = part.split("-", 1)
-            if a:
-                start = int(a)
-            else:
-                start = 1
-            if b:
-                end = int(b)
-            else:
-                end = None
+            start = int(a) if a else 1
+            end = int(b) if b else None
             result.append((start, end))
         else:
             n = int(part)
@@ -58,19 +53,23 @@ def _select_fields(line, fields, delimiter):
     for start, end in fields:
         if end is None:
             end = len(parts)
-        for index in range(
-            start - 1,
-            min(end, len(parts))
-        ):
-            selected.append(
-                parts[index]
-            )
+        for index in range(start - 1, min(end, len(parts))):
+            selected.append(parts[index])
     return delimiter.join(selected)
 def _decode(data):
     try:
         return data.decode("utf-8")
     except Exception:
         return data.decode()
+def _write(out, text, terminated):
+    if out:
+        out.write(text)
+        if terminated:
+            out.write("\n")
+    else:
+        sys.stdout.write(text)
+        if terminated:
+            sys.stdout.write("\n")
 def main(path, fields=None, delimiter="\t", byte_ranges=None, out=None):
     if not path:
         print("cut: missing file")
@@ -83,29 +82,35 @@ def main(path, fields=None, delimiter="\t", byte_ranges=None, out=None):
         out = open(out, "w")
         close_out = True
     try:
-        field_ranges = None
-        byte_ranges_parsed = None
-        if fields is not None:
-            field_ranges = _parse_list(fields)
-        if byte_ranges is not None:
-            byte_ranges_parsed = _parse_list(byte_ranges)
-        for line in fsio["iter_lines"](path):
+        field_ranges = (
+            _parse_list(fields)
+            if fields is not None
+            else None
+        )
+        byte_ranges_parsed = (
+            _parse_list(byte_ranges)
+            if byte_ranges is not None
+            else None
+        )
+        for line, terminated in fsio["iter_lines"](path):
             if byte_ranges_parsed is not None:
-                result = _select_bytes(
-                    line,
-                    byte_ranges_parsed,
+                result = _decode(
+                    _select_bytes(
+                        line,
+                        byte_ranges_parsed,
+                    )
                 )
-                result = _decode(result)
             else:
                 result = _select_fields(
                     _decode(line),
                     field_ranges,
                     delimiter,
                 )
-            if out:
-                out.write(result + "\n")
-            else:
-                print(result)
+            _write(
+                out,
+                result,
+                terminated,
+            )
     finally:
         if close_out:
             out.close()
