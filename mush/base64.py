@@ -76,13 +76,7 @@ def _encode_stream(path):
 
     if buf:
         pad = 3 - len(buf)
-
-        encoded = bytearray(
-            _encode_block(
-                buf + b"\x00" * pad
-            )
-        )
-
+encoded = bytearray(_encode_block(buf + b"\x00" * pad))
         for i in range(pad):
             encoded[-(i + 1)] = ord("=")
 

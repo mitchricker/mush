@@ -56,6 +56,8 @@ The design goals are:
 ## Text Processing
 
 - `cat`
+- `tac`
+- `nl`
 - `head`
 - `tail`
 - `grep`
@@ -71,6 +73,7 @@ The design goals are:
 
 - `wifi` *(requires MicroPython network support and wireless-capable hardware)*
 - `curl`
+- `wget`
 - `ping`
 - `nc`
 - `nslookup`
@@ -88,7 +91,9 @@ The design goals are:
 - `free`
 - `df`
 - `sysinfo`
+- `find`
 - `date`
+- `cal`
 - `reboot`
 
 ## Editor
@@ -250,8 +255,6 @@ Commands such as:
 - `tail`
 - `xxd`
 - `sha256sum`
-- `gzip`
-- `gunzip`
 
 use these helpers to minimize memory usage.
 
