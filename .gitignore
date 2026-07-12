@@ -1,7 +1,3 @@
-# Environment variables
-.env
-.env.*
-
 # Python cache
 __pycache__/
 *.py[cod]
@@ -9,3 +5,6 @@ __pycache__/
 # Virtual environments
 venv/
 .venv/
+
+# Work in progress
+mush/_stream.py
