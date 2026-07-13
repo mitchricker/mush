@@ -8,15 +8,14 @@ mush provides a lightweight command-line environment for MicroPython boards, bri
 
 # Table of Contents
 
-- [Overview](#overview)
-- [Features](#features)
-- [Installation](#installation)
-- [Usage](#usage)
-- [Available Commands](#available-commands)
-- [Python Integration](#python-integration)
-- [Internal Modules](#internal-modules)
-- [Requirements](#requirements)
-- [License](#license)
+* [Overview](#overview)
+* [Installation](#installation)
+* [Usage](#usage)
+* [Available Commands](#available-commands)
+* [Python Integration](#python-integration)
+* [Internal Modules](#internal-modules)
+* [Requirements](#requirements)
+* [License](#license)
 
 ---
 
@@ -28,72 +27,11 @@ It is inspired by BusyBox: commands are lightweight, independent modules that sh
 
 The design goals are:
 
-- Low memory usage
-- Streaming file operations
-- Simple extension model
-- Hardware-friendly behavior
-- Python-native integration
-
-[Back to top](#mitchs-micro-shell-mush)
-
----
-
-# Features
-
-## Filesystem Utilities
-
-- `ls`
-- `cd`
-- `pwd`
-- `cp`
-- `mv`
-- `rm`
-- `mkdir`
-- `touch`
-- `stat`
-- `tree`
-
-## Text Processing
-
-- `cat`
-- `head`
-- `tail`
-- `grep`
-- `wc`
-- `uniq`
-- `cut`
-- `strings`
-- `base64`
-- `xxd`
-- `sha256sum`
-
-## Networking
-
-- `wifi` *(requires MicroPython network support and wireless-capable hardware)*
-- `curl`
-- `ping`
-- `nc`
-- `nslookup`
-- `ntp`
-
-## Compression
-
-- `gzip` *(firmware dependent; requires MicroPython deflate compression support)*
-- `gunzip`
-
-## System Utilities
-
-- `uname`
-- `lscpu`
-- `free`
-- `df`
-- `sysinfo`
-- `date`
-- `reboot`
-
-## Editor
-
-- `edit`
+* Low memory usage
+* Streaming file operations
+* Simple extension model
+* Hardware-friendly behavior
+* Python-native integration
 
 [Back to top](#mitchs-micro-shell-mush)
 
@@ -105,12 +43,14 @@ Copy the `mush` package directory onto your MicroPython filesystem.
 
 Example layout:
 
-    /mush
-        __init__.py
-        ls.py
-        grep.py
-        curl.py
-        wifi.py
+```
+/mush
+    __init__.py
+    ls.py
+    grep.py
+    curl.py
+    wifi.py
+```
 
 Commands are discovered automatically when mush starts.
 
@@ -122,21 +62,29 @@ Commands are discovered automatically when mush starts.
 
 Import mush:
 
-    from mush import *
+```
+from mush import *
+```
 
 List available commands:
 
-    man()
+```
+man()
+```
 
 View documentation for a command:
 
-    man("wifi")
+```
+man("wifi")
+```
 
 Run commands directly:
 
-    ls()
-    wifi()
-    curl("https://example.com")
+```
+ls()
+wifi()
+curl("https://example.com")
+```
 
 [Back to top](#mitchs-micro-shell-mush)
 
@@ -146,42 +94,136 @@ Run commands directly:
 
 Commands are implemented as individual Python modules.
 
+Current commands:
+
+## Filesystem
+
+* `cd`
+* `cp`
+* `du`
+* `find`
+* `ls`
+* `mkdir`
+* `mv`
+* `pwd`
+* `rm`
+* `stat`
+* `touch`
+* `tree`
+
+## Text
+
+* `base64`
+* `cat`
+* `cut`
+* `grep`
+* `head`
+* `nl`
+* `strings`
+* `tail`
+* `tac`
+* `uniq`
+* `wc`
+* `xxd`
+
+## Data and Checksums
+
+* `cmp`
+* `ipcalc`
+* `md5sum`
+* `sha256sum`
+
+## Networking
+
+* `curl`
+* `httpd`
+* `mdnsd`
+* `nc`
+* `nslookup`
+* `ntp`
+* `ntpd`
+* `ping`
+* `wget`
+* `wifi`
+* `whois`
+
+Networking commands require MicroPython network support and appropriate hardware.
+
+## System
+
+* `cal`
+* `clear`
+* `date`
+* `df`
+* `free`
+* `lscpu`
+* `reboot`
+* `runtime`
+* `sysinfo`
+* `uname`
+
+## Compression
+
+* `gzip`
+* `gunzip`
+
+Compression support depends on available MicroPython modules.
+Decompression should be supported in more cases.
+
+## Hardware
+
+* `sdmount`
+* `umount`
+
+## Utilities
+
+* `edit`
+* `man`
+
 Each command provides:
 
-- A `main()` function
-- `__doc__` documentation used by `man()`
-- A callable interface through mush
+* A `main()` function
+* `__doc__` documentation used by `man()`
+* A callable interface through mush
 
 Commands are loaded on demand to reduce memory usage.
 
 Example command layout:
 
-    mush/
-        hello.py
+```
+mush/
+    hello.py
+```
 
 Example command:
 
-    __doc__ = """
-    NAME
-        hello - print a greeting
+```
+__doc__ = """
+NAME
+    hello - print a greeting
 
-    SYNOPSIS
-        hello(name)
+SYNOPSIS
+    hello(name)
 
-    EXAMPLES
-        hello("world")
-    """
+EXAMPLES
+    hello("world")
+"""
 
-    def main(name="world"):
-        print("Hello, {}".format(name))
+def main(name="world"):
+    print("Hello, {}".format(name))
+```
 
 The command becomes available automatically:
 
-    hello("world")
+```
+hello("world")
+```
 
 Command documentation is available through:
 
-    man("hello")
+```
+man("hello")
+```
 
 [Back to top](#mitchs-micro-shell-mush)
 
@@ -189,22 +231,15 @@ Command documentation is available through:
 
 # Python Integration
 
-mush commands are regular MicroPython functions.
+mush commands are regular MicroPython functions and can be called from normal Python code.
 
-They can be used alongside normal Python code:
+mush commands can be used from scripts just like any other function:
 
-    files = ls()
+    from mush import sysinfo, runtime
 
-    wifi("status")
+    sysinfo()
 
-    for item in find("/"):
-        print(item)
-
-    data = open("config.txt").read()
-
-To make mush commands available automatically on boot, add this to `boot.py`:
-
-    from mush import *
+    runtime()
 
 [Back to top](#mitchs-micro-shell-mush)
 
@@ -216,7 +251,9 @@ mush provides internal helper modules used by commands.
 
 These modules are not directly imported by commands. Instead, they are loaded through the mush internal loader:
 
-    helper = mush._load_internal("_name")
+```
+helper = mush._load_internal("_name")
+```
 
 The loader returns a dictionary of helper functions. This keeps internal dependencies lightweight and consistent across commands.
 
@@ -226,32 +263,21 @@ The loader returns a dictionary of helper functions. This keeps internal depende
 
 `_fsio` provides streaming filesystem helpers for commands that need to process files without loading entire files into memory.
 
-Commands access this module through the mush internal loader:
-
-    fsio = mush._load_internal("_fsio")
-
-Example:
-
-    for chunk in fsio["read_chunks"]("large_file.bin"):
-        process(chunk)
-
 Available helpers:
 
-- `read_chunks`
-- `write_stream`
-- `copy`
-- `atomic_write`
-- `iter_lines`
+* `read_chunks`
+* `write_stream`
+* `copy`
+* `atomic_write`
+* `iter_lines`
 
 Commands such as:
 
-- `cat`
-- `head`
-- `tail`
-- `xxd`
-- `sha256sum`
-- `gzip`
-- `gunzip`
+* `cat`
+* `head`
+* `tail`
+* `xxd`
+* `sha256sum`
 
 use these helpers to minimize memory usage.
 
@@ -259,37 +285,25 @@ use these helpers to minimize memory usage.
 
 ## `_sys`
 
-`_sys` provides system information helpers for commands that report memory, CPU, filesystem, and hardware information.
-
-Commands access this module through the mush internal loader:
-
-    system = mush._load_internal("_sys")
-
-Example:
-
-    memory = system["mem_info"]()
-
-    filesystem = system["fs_info"]("/")
-
-    cpu = system["cpu_info"]()
+`_sys` provides system information helpers.
 
 Available helpers:
 
-- `mem_info`
-- `fs_info`
-- `cpu_info`
-- `reset_cause`
-- `uname_info`
-- `format_size`
-- `percent`
-- `summary`
+* `mem_info`
+* `fs_info`
+* `cpu_info`
+* `reset_cause`
+* `uname_info`
+* `format_size`
+* `percent`
+* `summary`
 
 Commands such as:
 
-- `df`
-- `free`
-- `lscpu`
-- `sysinfo`
+* `df`
+* `free`
+* `lscpu`
+* `sysinfo`
 
 use these helpers.
 
@@ -299,36 +313,23 @@ use these helpers.
 
 `_net` provides shared networking primitives for commands that require sockets, DNS resolution, TLS support, or connection cleanup.
 
-Commands access this module through the mush internal loader:
-
-    net = mush._load_internal("_net")
-
-Example:
-
-    sock = net["tcp_connect"]("example.com", 80)
-
-    sock.send(b"GET / HTTP/1.0\r\n\r\n")
-
-    for data in net["recv_iter"](sock):
-        print(data)
-
-    net["safe_close"](sock)
-
 Available helpers:
 
-- `resolve`
-- `tcp_connect`
-- `udp_connect`
-- `tls_wrap`
-- `recv_iter`
-- `safe_close`
+* `resolve`
+* `tcp_connect`
+* `udp_connect`
+* `tls_wrap`
+* `recv_iter`
+* `safe_close`
 
 Commands such as:
 
-- `curl`
-- `ping`
-- `nc`
-- `nslookup`
+* `curl`
+* `wget`
+* `ping`
+* `nc`
+* `nslookup`
+* `whois`
 
 use this layer to share common socket behavior.
 
@@ -338,16 +339,17 @@ use this layer to share common socket behavior.
 
 # Requirements
 
-- MicroPython v1.21 or newer
-- Filesystem support
-- Network-capable hardware for networking features
+* MicroPython v1.21 or newer
+* Filesystem support
+* Network-capable hardware for networking features
 
 Optional MicroPython modules:
 
-- `network`
-- `ssl`
-- `deflate`
-- `machine`
+* `network`
+* `ssl`
+* `deflate`
+* `machine`
+* `socket`
 
 [Back to top](#mitchs-micro-shell-mush)
 
