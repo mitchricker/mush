@@ -4,11 +4,10 @@ import os
 __version__ = "0.2.2"
 __author__ = "Mitch Ricker"
 __license__ = "MIT"
-__path__ = ["/mush"]
 
 _COMMANDS = {}
 _INTERNAL = {}
-
+_ROOT = __file__.rsplit("/", 1)[0]
 
 class _Module:
     def __init__(self, values):
@@ -19,7 +18,7 @@ def _load_internal(name):
     if name in _INTERNAL:
         return _INTERNAL[name]
 
-    path = "/mush/" + name + ".py"
+    path = _ROOT + "/" + name + ".py"
 
     try:
         f = open(path)
@@ -43,7 +42,7 @@ def _load(cmd):
     if cmd in _COMMANDS:
         return _COMMANDS[cmd]
 
-    path = "/mush/" + cmd + ".py"
+    path = _ROOT + "/" + cmd + ".py"
 
     try:
         f = open(path)
@@ -100,7 +99,7 @@ def __getattr__(name):
 
 
 try:
-    for filename in os.listdir("/mush"):
+    for filename in os.listdir(_ROOT):
         if (
             filename.endswith(".py")
             and not filename.startswith("_")
