@@ -32,5 +32,5 @@ def main():
     )
 
     print(result)
-
-    return result
+    
+    return total, alloc, free, usage_pct

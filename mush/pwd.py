@@ -14,6 +14,10 @@ EXAMPLES
 import os
 def main():
     try:
-        print(os.getcwd())
+        cwd = os.getcwd()
     except OSError as e:
         print("pwd: {}".format(e))
+    
+    print(cwd)
+    
+    return cwd

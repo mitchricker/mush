@@ -7,29 +7,47 @@ SYNOPSIS
 
 DESCRIPTION
     Uses os.rename() when possible.
-    Falls back to cp + delete.
+    Falls back to copy and delete.
 
 EXAMPLES
     mv("a.txt", "b.txt")
 """
+
 import os
 import mush
+
 fsio = mush._load_internal("_fsio")
+
+
 def main(src, dst):
     try:
         os.rename(src, dst)
-        return
+        print("moved:", src, "->", dst)
+        return True
+
     except Exception:
         pass
-    dst_file = None
+
+    f = None
+
     try:
-        dst_file = open(dst, "wb")
+        f = open(dst, "wb")
+
         for chunk in fsio["read_chunks"](src):
-            dst_file.write(chunk)
-    finally:
-        if dst_file:
-            dst_file.close()
-    try:
+            f.write(chunk)
+
+        f.close()
+        f = None
+
         os.remove(src)
-    except Exception:
-        pass
+
+        print("moved:", src, "->", dst)
+        return True
+
+    except Exception as e:
+        print("mv failed:", e)
+        return False
+
+    finally:
+        if f:
+            f.close()
