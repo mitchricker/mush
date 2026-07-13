@@ -27,11 +27,77 @@ It is inspired by BusyBox: commands are lightweight, independent modules that sh
 
 The design goals are:
 
-* Low memory usage
-* Streaming file operations
-* Simple extension model
-* Hardware-friendly behavior
-* Python-native integration
+- Low memory usage
+- Streaming file operations
+- Simple extension model
+- Hardware-friendly behavior
+- Python-native integration
+
+[Back to top](#mitchs-micro-shell-mush)
+
+---
+
+# Features
+
+## Filesystem Utilities
+
+- `ls`
+- `cd`
+- `pwd`
+- `cp`
+- `mv`
+- `rm`
+- `mkdir`
+- `touch`
+- `stat`
+- `tree`
+
+## Text Processing
+
+- `cat`
+- `tac`
+- `nl`
+- `head`
+- `tail`
+- `grep`
+- `wc`
+- `uniq`
+- `cut`
+- `strings`
+- `base64`
+- `xxd`
+- `sha256sum`
+
+## Networking
+
+- `wifi` *(requires MicroPython network support and wireless-capable hardware)*
+- `curl`
+- `wget`
+- `ping`
+- `nc`
+- `nslookup`
+- `ntp`
+
+## Compression
+
+- `gzip` *(firmware dependent; requires MicroPython deflate compression support)*
+- `gunzip`
+
+## System Utilities
+
+- `uname`
+- `lscpu`
+- `free`
+- `df`
+- `sysinfo`
+- `find`
+- `date`
+- `cal`
+- `reboot`
+
+## Editor
+
+- `edit`
 
 [Back to top](#mitchs-micro-shell-mush)
 
@@ -273,11 +339,11 @@ Available helpers:
 
 Commands such as:
 
-* `cat`
-* `head`
-* `tail`
-* `xxd`
-* `sha256sum`
+- `cat`
+- `head`
+- `tail`
+- `xxd`
+- `sha256sum`
 
 use these helpers to minimize memory usage.
 
