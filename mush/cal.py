@@ -27,6 +27,10 @@ EXAMPLES
 
 import time
 
+import mush
+
+fsio = mush._load_internal("_fsio")
+
 
 _MONTHS = (
     "January", "February", "March",
@@ -44,8 +48,10 @@ _DAYS = (
 def _leap(year):
     if year % 400 == 0:
         return True
+
     if year % 100 == 0:
         return False
+
     return year % 4 == 0
 
 
@@ -82,17 +88,22 @@ def _weekday(year, month, day=1):
     ) % 7
 
 
-def _print_month(year, month):
-    title = "{} {}".format(
-        _MONTHS[month - 1],
-        year,
+def _print_month(write, year, month):
+    write(
+        "{}\n".format(
+            "{} {}".format(
+                _MONTHS[month - 1],
+                year,
+            ).center(20)
+        )
     )
 
-    print(title.center(20))
-    print(
-        " ".join(
-            "{:>2}".format(day)
-            for day in _DAYS
+    write(
+        "{}\n".format(
+            " ".join(
+                "{:>2}".format(day)
+                for day in _DAYS
+            )
         )
     )
 
@@ -107,34 +118,45 @@ def _print_month(year, month):
         column += 1
 
         if column == 7:
-            print(line.rstrip())
+            write(line.rstrip() + "\n")
             line = ""
             column = 0
 
     if line:
-        print(line.rstrip())
+        write(line.rstrip() + "\n")
 
 
-def _print_year(year):
+def _print_year(write, year):
     for month in range(1, 13):
-        _print_month(year, month)
+        _print_month(write, year, month)
 
         if month != 12:
-            print()
+            write("\n")
 
 
-def main(year=None, month=None):
-    if year is None:
-        now = time.localtime()
-        year = now[0]
-        month = now[1]
+def main(year=None, month=None, out=None, collect=False):
+    write, close, result = fsio["output"](
+        out=out,
+        collect=collect,
+    )
 
-    elif month is None:
-        _print_year(year)
-        return
+    try:
+        if year is None:
+            now = time.localtime()
+            year = now[0]
+            month = now[1]
 
-    if month < 1 or month > 12:
-        print("cal: invalid month")
-        return
+        elif month is None:
+            _print_year(write, year)
+            return result()
 
-    _print_month(year, month)
+        if month < 1 or month > 12:
+            print("cal: invalid month")
+            return False
+
+        _print_month(write, year, month)
+
+    finally:
+        close()
+
+    return result()

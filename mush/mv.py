@@ -25,7 +25,21 @@ def main(src, dst):
     try:
         dst_file = open(dst, "wb")
         for chunk in fsio["read_chunks"](src):
-            dst_file.write(chunk)
+
+            f.write(chunk)
+
+        f.close()
+        f = None
+
+        os.remove(src)
+
+        print("moved:", src, "->", dst)
+        return dst
+
+    except Exception as e:
+        print("mv failed:", e)
+        return False
+
     finally:
         if dst_file:
             dst_file.close()
