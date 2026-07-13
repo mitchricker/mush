@@ -1,13 +1,34 @@
 import gc
 import os
+import sys
 
 __version__ = "0.2.2"
 __author__ = "Mitch Ricker"
 __license__ = "MIT"
-
 _COMMANDS = {}
 _INTERNAL = {}
-_ROOT = __file__.rsplit("/", 1)[0]
+
+def _find_root():
+    cwd = os.getcwd()
+    for prefix in sys.path:
+        if prefix == ".frozen":
+            continue
+        if prefix:
+            path = prefix.rstrip("/") + "/mush"
+        else:
+            path = cwd.rstrip("/") + "/mush"
+        try:
+            os.listdir(path)
+            return path
+        except OSError:
+            pass
+    raise ImportError("cannot locate mush package")
+
+_ROOT = _find_root()
+
+parent = _ROOT.rsplit("/", 1)[0]
+if parent not in sys.path:
+    sys.path.append(parent)
 
 class _Module:
     def __init__(self, values):

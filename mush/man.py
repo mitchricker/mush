@@ -21,6 +21,7 @@ EXAMPLES
     man("wifi")
 """
 import os
+import mush
 
 def _pad(s, width):
     s = str(s)
@@ -43,7 +44,7 @@ def _print_columns(items, cols=3, width=14):
 
 def _list_commands():
     try:
-        files = os.listdir("/mush")
+        files = os.listdir(mush._ROOT)
     except Exception:
         return []
 
@@ -60,7 +61,7 @@ def _list_commands():
     return cmds
 
 def _load_doc(command):
-    path = "/mush/" + command + ".py"
+    path = mush._ROOT + "/" + command + ".py"
 
     try:
         f = open(path)
