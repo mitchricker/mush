@@ -13,54 +13,73 @@ EXAMPLES
     sysinfo()
     sysinfo("/")
 """
+
 import mush
+
 sys = mush._load_internal("_sys")
+
+
 def main(path="/"):
-    info = sys["summary"](path)
-    uname = info["uname"]
-    cpu = info["cpu"]
-    mem = info["memory"]
-    fs = info["filesystem"]
-    print("Mitch's Micro Shell")
-    print("----------------")
-    if uname:
-        print("System:     {}".format(uname.get("sysname", "")))
-        print("Release:    {}".format(uname.get("release", "")))
-        print("Machine:    {}".format(uname.get("machine", "")))
-    print()
-    print("Platform:   {}".format(cpu.get("platform", "")))
-    print("Arch:       {}".format(cpu.get("arch", "")))
-    freq = cpu.get("freq")
+    memory, cpu, uname, fs = sys["summary"](path)
+
+    free, alloc, total = memory
+    arch, platform, freq, reset = cpu
+    sysname, node, release, version, machine = uname
+
+    lines = []
+
+    lines.append("Mitch's Micro Shell")
+    lines.append("----------------")
+
+    if sysname:
+        lines.append("System:     {}".format(sysname))
+        lines.append("Release:    {}".format(release))
+        lines.append("Machine:    {}".format(machine))
+
+    lines.append("")
+    lines.append("Platform:   {}".format(platform))
+    lines.append("Arch:       {}".format(arch))
+
     if freq:
         if isinstance(freq, int) and freq >= 1000000:
             freq = "{} MHz".format(freq // 1000000)
-        print("CPU:        {}".format(freq))
-    print()
-    print("Memory:")
-    print("  Total:    {}".format(
-        sys["format_size"](mem["total"])
+        lines.append("CPU:        {}".format(freq))
+
+    if reset is not None:
+        lines.append("Reset:      {}".format(reset))
+
+    lines.append("")
+    lines.append("Memory:")
+    lines.append("  Total:    {}".format(
+        sys["format_size"](total)
     ))
-    print("  Used:     {}".format(
-        sys["format_size"](mem["allocated"])
+    lines.append("  Used:     {}".format(
+        sys["format_size"](alloc)
     ))
-    print("  Free:     {}".format(
-        sys["format_size"](mem["free"])
+    lines.append("  Free:     {}".format(
+        sys["format_size"](free)
     ))
+
     if fs:
-        print()
-        print("Filesystem:")
-        print("  Total:    {}".format(
-            sys["format_size"](fs["total"])
+        block, blocks, blocks_free, total, used, free = fs
+
+        lines.append("")
+        lines.append("Filesystem:")
+        lines.append("  Total:    {}".format(
+            sys["format_size"](total)
         ))
-        print(
+        lines.append(
             "  Used:     {} ({}%)".format(
-                sys["format_size"](fs["used"]),
-                sys["percent"](
-                    fs["used"],
-                    fs["total"],
-                ),
+                sys["format_size"](used),
+                sys["percent"](used, total),
             )
         )
-        print("  Free:     {}".format(
-            sys["format_size"](fs["free"])
+        lines.append("  Free:     {}".format(
+            sys["format_size"](free)
         ))
+
+    result = "\n".join(lines)
+
+    print(result)
+
+    return result
