@@ -9,6 +9,10 @@ DESCRIPTION
     Uses os.rename() when possible.
     Falls back to copy and delete.
 
+    Returns:
+        True  - success
+        False - failure
+
 EXAMPLES
     mv("a.txt", "b.txt")
 """
@@ -22,44 +26,36 @@ fsio = mush._load_internal("_fsio")
 def main(src, dst):
     try:
         os.rename(src, dst)
-        print("moved:", src, "->", dst)
+
+        print(
+            "moved:",
+            src,
+            "->",
+            dst,
+        )
+
         return True
 
     except Exception:
         pass
 
-    f = None
-
     try:
-        f = open(dst, "wb")
-
-        for chunk in fsio["read_chunks"](src):
-            f.write(chunk)
-
-        f.close()
-        f = None
-
+        fsio["copy"](src, dst)
         os.remove(src)
 
-        print("moved:", src, "->" , dst)
-        return dst
+        print(
+            "moved:",
+            src,
+            "->",
+            dst,
+        )
 
-    except Exception as e:
-        print("mv failed:", e)
-        return False
-
-    finally:
-        if dst_file:
-            dst_file.close()
-        os.remove(src)
-
-        print("moved:", src, "->", dst)
         return True
 
     except Exception as e:
-        print("mv failed:", e)
-        return False
+        print(
+            "mv failed:",
+            e,
+        )
 
-    finally:
-        if f:
-            f.close()
+        return False
