@@ -3,8 +3,7 @@ NAME
     ping - TCP connectivity test
 
 SYNOPSIS
-    ping(host)
-    ping(host, port=80, count=4, timeout=1000)
+    ping(host, port=80, count=4, timeout=1000, collect=False)
 
 DESCRIPTION
     Measures TCP connect latency by timing socket
@@ -12,45 +11,119 @@ DESCRIPTION
 
     This is NOT ICMP ping. It tests TCP reachability.
 
-    If count=0, ping runs indefinitely until interrupted.
+    Returns:
+        {
+            "sent": count,
+            "received": successful,
+            "results": [(sequence, milliseconds), ...]
+        }
+
+    With collect=False, results are printed and only the
+    summary tuple is returned.
 
 EXAMPLES
     ping("192.168.1.1")
 
     ping("example.com", port=443)
 
-    # Test a slow or unreachable host with a short timeout
-    ping("10.255.255.1", port=80, timeout=200)
-
-    # Infinite monitoring mode
     ping("8.8.8.8", port=53, count=0)
 """
+
 import time
 import mush
+
 net = mush._load_internal("_net")
-def main(host, port=80, count=4, timeout=1000):
-    print("TCP PING {}:{}".format(host, port))
-    print()
+
+
+def main(
+    host,
+    port=80,
+    count=4,
+    timeout=1000,
+    collect=False,
+):
+    if not collect:
+        print(
+            "TCP PING {}:{}".format(
+                host,
+                port,
+            )
+        )
+        print()
+
+    results = [] if collect else None
+
     ok = 0
-    i = 0
+    sent = 0
+
     try:
         while True:
-            if count and i >= count:
+            if count and sent >= count:
                 break
+
             start = time.ticks_ms()
             sock = None
+
             try:
-                sock = net["tcp_connect"](host, port, timeout)
-                ms = time.ticks_diff(time.ticks_ms(), start)
-                print("seq={} time={} ms".format(i, ms))
+                sock = net["tcp_connect"](
+                    host,
+                    port,
+                    timeout,
+                )
+
+                ms = time.ticks_diff(
+                    time.ticks_ms(),
+                    start,
+                )
+
                 ok += 1
+
+                if collect:
+                    results.append(
+                        (sent, ms)
+                    )
+                else:
+                    print(
+                        "seq={} time={} ms".format(
+                            sent,
+                            ms,
+                        )
+                    )
+
             except Exception:
-                print("seq={} timeout".format(i))
+                if not collect:
+                    print(
+                        "seq={} timeout".format(
+                            sent
+                        )
+                    )
+
             finally:
                 if sock:
                     net["safe_close"](sock)
-            i += 1
+
+            sent += 1
+
     except KeyboardInterrupt:
-        print("\nping stopped by user")
+        if not collect:
+            print("\nping stopped by user")
+
+    if collect:
+        return (
+            sent,
+            ok,
+            results,
+        )
+
     print()
-    print("{} sent, {} received".format(i, ok))
+    print(
+        "{} sent, {} received".format(
+            sent,
+            ok,
+        )
+    )
+
+    return (
+        sent,
+        ok,
+    )
