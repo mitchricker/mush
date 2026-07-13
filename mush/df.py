@@ -3,29 +3,33 @@ NAME
     df - display filesystem usage
 
 SYNOPSIS
-    df(path="/")
+    df([path="/"])
+
+DESCRIPTION
+    Displays filesystem size and usage.
 """
+
 import mush
-sysinfo = mush._load_internal("_sys")
+
+
 def main(path="/"):
-    fs = sysinfo["fs_info"](path)
-    print("Filesystem: {}".format(path))
-    print(
-        "Size:       {}".format(
-            sysinfo["format_size"](fs["total"])
-        )
+    block, blocks, blocks_free, total, used, free = (
+        mush._load_internal("_sys")["fs_info"](path)
     )
-    print(
-        "Used:       {} ({}%)".format(
-            sysinfo["format_size"](fs["used"]),
-            sysinfo["percent"](
-                fs["used"],
-                fs["total"],
-            ),
-        )
+
+    result = (
+        "Filesystem: {}\n"
+        "Size:       {}\n"
+        "Used:       {} ({}%)\n"
+        "Free:       {}"
+    ).format(
+        path,
+        mush._load_internal("_sys")["format_size"](total),
+        mush._load_internal("_sys")["format_size"](used),
+        mush._load_internal("_sys")["percent"](used, total),
+        mush._load_internal("_sys")["format_size"](free),
     )
-    print(
-        "Free:       {}".format(
-            sysinfo["format_size"](fs["free"])
-        )
-    )
+
+    print(result)
+
+    return result
