@@ -2,7 +2,7 @@ import gc
 import os
 import sys
 
-__version__ = "0.2.2"
+__version__ = "0.3.0"
 __author__ = "Mitch Ricker"
 __license__ = "MIT"
 _COMMANDS = {}
