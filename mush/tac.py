@@ -10,6 +10,7 @@ DESCRIPTION
 
 EXAMPLES
     tac("log.txt")
+    tac("log.txt", collect=True)
 """
 
 import mush

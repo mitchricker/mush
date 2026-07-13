@@ -41,6 +41,18 @@ def main(src, dst):
 
         os.remove(src)
 
+        print("moved:", src, "->" , dst)
+        return dst
+
+    except Exception as e:
+        print("mv failed:", e)
+        return False
+
+    finally:
+        if dst_file:
+            dst_file.close()
+        os.remove(src)
+
         print("moved:", src, "->", dst)
         return True
 

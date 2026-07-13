@@ -27,7 +27,7 @@ def main(src, dst):
             f.write(chunk)
 
         print("copied:", src, "->", dst)
-        return True
+        return dst
 
     except Exception as e:
         print("cp failed:", e)
