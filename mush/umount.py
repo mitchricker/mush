@@ -16,5 +16,7 @@ def main(path):
     try:
         os.umount(path)
         print("unmounted {}".format(path))
+        return True
     except OSError as e:
         print("umount: {}: {}".format(path, e))
+        return False

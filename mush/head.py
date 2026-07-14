@@ -31,12 +31,10 @@ def main(path, n=10, out=None, collect=False):
             if i >= n:
                 break
 
-            try:
-                write(line.decode("utf-8", "ignore"))
-            except Exception:
-                write(str(line))
+            write(fsio["decode"](line))
 
-            write("\n")
+            if terminated:
+                write("\n")
 
     finally:
         close()

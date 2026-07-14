@@ -19,13 +19,13 @@ fsio = mush._load_internal("_fsio")
 
 
 def main(path, n=10, out=None, collect=False):
-    buf = []
+    lines = []
 
-    for line, terminated in fsio["iter_lines"](path):
-        buf.append(line)
+    for line in fsio["iter_lines_reverse"](path):
+        lines.append(line)
 
-        if len(buf) > n:
-            del buf[0]
+        if len(lines) >= n:
+            break
 
     write, close, result = fsio["output"](
         out=out,
@@ -33,12 +33,8 @@ def main(path, n=10, out=None, collect=False):
     )
 
     try:
-        for line in buf:
-            try:
-                write(line.decode("utf-8", "ignore"))
-            except Exception:
-                write(str(line))
-
+        while lines:
+            write(fsio["decode"](lines.pop()))
             write("\n")
 
     finally:
