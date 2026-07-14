@@ -9,7 +9,7 @@ DESCRIPTION
     Displays system information.
 
     Returns:
-        system information dictionary
+        (sysname, nodename, release, version, machine)
 
     Returns None on failure.
 """
@@ -22,21 +22,9 @@ sysinfo = mush._load_internal("_sys")
 def main():
     try:
         info = sysinfo["uname_info"]()
-
     except Exception as e:
-        print(
-            "uname: {}".format(e)
-        )
+        print("uname: {}".format(e))
         return None
 
-    print(
-        "{} {} {} {} {}".format(
-            info.get("sysname", ""),
-            info.get("nodename", ""),
-            info.get("release", ""),
-            info.get("version", ""),
-            info.get("machine", ""),
-        )
-    )
-
+    print("{} {} {} {} {}".format(*info))
     return info

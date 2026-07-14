@@ -58,7 +58,7 @@ def _walk(path, depth, maxdepth, write):
             )
 
 
-def main(path, maxdepth=5, out=None, collect=False):
+def main(path=".", maxdepth=5, out=None, collect=False):
     write, close, result = fsio["output"](
         out=out,
         collect=collect,
