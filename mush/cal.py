@@ -3,9 +3,7 @@ NAME
     cal - display a calendar
 
 SYNOPSIS
-    cal()
-    cal(year)
-    cal(year, month)
+    cal(year=None, month=None, out=None, collect=False)
 
 DESCRIPTION
     Displays a calendar.
@@ -13,16 +11,42 @@ DESCRIPTION
     With no arguments:
         Shows the current month.
 
-    With one argument:
+    With one positional argument:
         Shows the requested year.
 
     With two arguments:
         Shows the requested month.
 
+    Returns:
+
+        collect=False:
+            None on success
+            False on failure
+
+        collect=True:
+            Generated calendar text
+
 EXAMPLES
     cal()
-    cal(2026)
-    cal(2026, 7)
+
+    cal(
+        month=7
+    )
+
+    cal(
+        2026
+    )
+
+    cal(
+        2026,
+        7,
+    )
+
+    cal(
+        2026,
+        7,
+        collect=True,
+    )
 """
 
 import time
@@ -107,56 +131,114 @@ def _print_month(write, year, month):
         )
     )
 
-    first = _weekday(year, month)
-    days = _days_in_month(year, month)
+    first = _weekday(
+        year,
+        month,
+    )
+
+    days = _days_in_month(
+        year,
+        month,
+    )
 
     line = "   " * first
     column = first
 
-    for day in range(1, days + 1):
+    for day in range(
+        1,
+        days + 1,
+    ):
         line += "{:>2} ".format(day)
         column += 1
 
         if column == 7:
-            write(line.rstrip() + "\n")
+            write(
+                line.rstrip()
+                + "\n"
+            )
+
             line = ""
             column = 0
 
     if line:
-        write(line.rstrip() + "\n")
+        write(
+            line.rstrip()
+            + "\n"
+        )
 
 
 def _print_year(write, year):
     for month in range(1, 13):
-        _print_month(write, year, month)
+        _print_month(
+            write,
+            year,
+            month,
+        )
 
         if month != 12:
             write("\n")
 
 
-def main(year=None, month=None, out=None, collect=False):
-    write, close, result = fsio["output"](
-        out=out,
-        collect=collect,
-    )
+def main(
+    year=None,
+    month=None,
+    out=None,
+    collect=False,
+):
+    chunks = []
+
+    if collect:
+        def write(value):
+            chunks.append(value)
+
+        close = None
+
+    else:
+        write, close, _ = fsio["output"](
+            out=out,
+        )
 
     try:
         if year is None:
             now = time.localtime()
+
             year = now[0]
-            month = now[1]
 
-        elif month is None:
-            _print_year(write, year)
-            return result()
+            if month is None:
+                month = now[1]
 
-        if month < 1 or month > 12:
-            print("cal: invalid month")
-            return False
+        if month is None:
+            _print_year(
+                write,
+                year,
+            )
 
-        _print_month(write, year, month)
+        else:
+            if month < 1 or month > 12:
+                print(
+                    "cal: invalid month"
+                )
+
+                return False
+
+            _print_month(
+                write,
+                year,
+                month,
+            )
+
+    except Exception as e:
+        print(
+            "cal: {}".format(e)
+        )
+
+        return False
 
     finally:
-        close()
+        if close:
+            close()
 
-    return result()
+    if collect:
+        return "".join(chunks)
+
+    return None

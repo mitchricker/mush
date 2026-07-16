@@ -14,10 +14,22 @@ DESCRIPTION
 
     Strings shorter than minlen are ignored.
 
+    Returns:
+        collect=False:
+            None on success
+            False on failure
+
+        collect=True:
+            Extracted strings
+
 EXAMPLES
     strings("firmware.bin")
+
     strings("image.raw", minlen=8)
+
     strings("flash.bin", out="strings.txt")
+
+    strings("flash.bin", collect=True)
 """
 
 import mush
@@ -60,7 +72,20 @@ def main(path, minlen=4, out=None, collect=False):
         if len(buf) >= minlen:
             _emit(buf, write)
 
+    except OSError as e:
+        print(
+            "strings: {}: {}".format(
+                path,
+                e,
+            )
+        )
+
+        return False
+
     finally:
         close()
 
-    return result()
+    if collect:
+        return result()
+
+    return None

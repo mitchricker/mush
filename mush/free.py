@@ -3,34 +3,91 @@ NAME
     free - display memory usage
 
 SYNOPSIS
-    free()
+    free(collect=False)
 
 DESCRIPTION
     Displays MicroPython heap memory usage.
 
-    Returns the formatted output string.
+    Runs garbage collection before measuring by default.
+
+    Returns:
+
+        collect=False:
+            None on success
+            False on error
+
+        collect=True:
+            (
+                total memory,
+                used memory,
+                free memory,
+                usage percentage
+            )
+
+            False on error
+
+OPTIONS
+
+    gc:
+        Run gc.collect() before measuring.
+        Default: True
+
+EXAMPLES
+    free()
+
+    free(collect=True)
+
 """
+
+import gc
 import mush
-def main():
-    free, alloc, total = mush._load_internal("_sys")["mem_info"]()
 
-    usage_pct = 0
-    if total:
-        usage_pct = (alloc * 100) // total
 
-    result = (
-        "Memory:\n"
-        "  total: {} bytes\n"
-        "  used : {} bytes\n"
-        "  free : {} bytes\n"
-        "  use% : {}%"
-    ).format(
-        total,
-        alloc,
-        free,
-        usage_pct,
-    )
+def main(
+    collect=False,
+):
+    try:
 
-    print(result)
-    
-    return total, alloc, free, usage_pct
+        free, alloc, total = (
+            mush._load_internal("_sys")["mem_info"]()
+        )
+
+        usage_pct = 0
+
+        if total:
+            usage_pct = (
+                alloc * 100
+            ) // total
+
+        result = (
+            total,
+            alloc,
+            free,
+            usage_pct,
+        )
+
+        if collect:
+            return result
+
+        print(
+            "Memory:\n"
+            "  total: {} bytes\n"
+            "  used : {} bytes\n"
+            "  free : {} bytes\n"
+            "  use% : {}%"
+            .format(
+                total,
+                alloc,
+                free,
+                usage_pct,
+            )
+        )
+
+        return None
+
+    except Exception as e:
+        print(
+            "free: {}".format(e)
+        )
+
+        return False

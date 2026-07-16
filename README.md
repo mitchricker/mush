@@ -12,6 +12,7 @@ mush provides a lightweight command-line environment for MicroPython boards, bri
 * [Installation](#installation)
 * [Usage](#usage)
 * [Available Commands](#available-commands)
+* [Command Return Values](#command-return-values)
 * [Python Integration](#python-integration)
 * [Internal Modules](#internal-modules)
 * [Requirements](#requirements)
@@ -21,17 +22,18 @@ mush provides a lightweight command-line environment for MicroPython boards, bri
 
 # Overview
 
-mush is a collection of small Python modules designed to provide a familiar Unix-style environment on MicroPython devices.
+mush is a collection of small Python modules designed to provide a familiar Unix-style environment for MicroPython devices.
 
 It is inspired by BusyBox: commands are lightweight, independent modules that share common internal helpers.
 
 The design goals are:
 
-- Low memory usage
-- Streaming file operations
-- Simple extension model
-- Hardware-friendly behavior
-- Python-native integration
+* Low memory usage
+* Streaming file operations
+* Simple extension model
+* Hardware-friendly behavior
+* Python-native integration
+* Consistent command interfaces
 
 [Back to top](#mitchs-micro-shell-mush)
 
@@ -82,7 +84,9 @@ Run commands directly:
 
 ```
 ls()
+
 wifi()
+
 curl("https://example.com")
 ```
 
@@ -168,7 +172,6 @@ Networking commands require MicroPython network support and appropriate hardware
 * `gunzip`
 
 Compression support depends on available MicroPython modules.
-Decompression should be supported in more cases.
 
 ## Hardware
 
@@ -229,17 +232,73 @@ man("hello")
 
 ---
 
-# Python Integration
+# Command return values
 
-mush commands are regular MicroPython functions and can be called from normal Python code.
+mush commands support both interactive shell use and Python scripting.
 
-mush commands can be used from scripts just like any other function:
+By default:
 
-    from mush import sysinfo, runtime
+* Commands print their output.
+* Successful commands return `None`.
+* Errors return `False`.
 
-    sysinfo()
+Example:
 
-    runtime()
+```text
+mkdir("test")
+```
+
+prints:
+
+```text
+created: test
+```
+
+and returns:
+
+```text
+None
+```
+
+## Collection mode
+
+Commands that generate useful data support `collect=True`.
+
+With collection enabled, output is returned instead of only displayed.
+
+Examples:
+
+```text
+date(collect=True)
+```
+
+returns:
+
+```text
+"2026-07-16 08:26:57"
+```
+
+```text
+stat("boot.py", collect=True)
+```
+
+returns:
+
+```text
+("boot.py", 161, 32768, "file")
+```
+
+```text
+find("/flash", collect=True)
+```
+
+returns a list of matching paths.
+
+General rule:
+
+* Normal use: print output, return `None`
+* `collect=True`: return data
+* Failure: return `False`
 
 [Back to top](#mitchs-micro-shell-mush)
 
@@ -270,14 +329,18 @@ Available helpers:
 * `copy`
 * `atomic_write`
 * `iter_lines`
+* `iter_lines_reverse`
+* `output`
 
 Commands such as:
 
-- `cat`
-- `head`
-- `tail`
-- `xxd`
-- `sha256sum`
+* `cat`
+* `head`
+* `tail`
+* `xxd`
+* `sha256sum`
+* `md5sum`
+* `gzip`
 
 use these helpers to minimize memory usage.
 
@@ -305,7 +368,7 @@ Commands such as:
 * `lscpu`
 * `sysinfo`
 
-use these helpers.
+use this layer.
 
 ---
 
@@ -331,7 +394,46 @@ Commands such as:
 * `nslookup`
 * `whois`
 
-use this layer to share common socket behavior.
+use this layer.
+
+---
+
+## `_http`
+
+`_http` provides HTTP client helpers.
+
+Available features:
+
+* URL parsing
+* HTTP requests
+* response handling
+* redirects
+* header processing
+
+Commands such as:
+
+* `curl`
+* `wget`
+
+use this layer.
+
+---
+
+## `_ntp`
+
+`_ntp` provides SNTP synchronization helpers.
+
+Available features:
+
+* Default NTP server configuration
+* Clock synchronization
+
+Commands such as:
+
+* `ntp`
+* `ntpd`
+
+use this layer.
 
 [Back to top](#mitchs-micro-shell-mush)
 

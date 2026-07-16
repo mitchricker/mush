@@ -3,15 +3,33 @@ NAME
     tree - display directory structure
 
 SYNOPSIS
-    tree(path, maxdepth=5, out=None, collect=False)
+    tree(path=".", maxdepth=5, out=None, collect=False)
 
 DESCRIPTION
-    Prints a visual directory tree.
+    Displays a visual directory tree.
+
+    Returns:
+
+        collect=True:
+            list of tree lines
+
+        collect=False:
+            None on success
+
+        False on error
 
 EXAMPLES
     tree("/")
-    tree("/flash", maxdepth=3)
-    tree("/", collect=True)
+
+    tree(
+        "/flash",
+        maxdepth=3,
+    )
+
+    tree(
+        "/",
+        collect=True,
+    )
 """
 
 import os
@@ -22,9 +40,18 @@ fsio = mush._load_internal("_fsio")
 
 def _write_line(write, depth, name):
     if depth:
-        write(("  " * depth) + name + "\n")
+        line = (
+            ("  " * depth)
+            + name
+        )
+
     else:
-        write(name + "\n")
+        line = name
+
+    write(
+        line
+        + "\n"
+    )
 
 
 def _walk(path, depth, maxdepth, write):
@@ -42,12 +69,19 @@ def _walk(path, depth, maxdepth, write):
 
         try:
             mode = os.stat(full)[0]
-            is_dir = (mode & 0x4000) != 0
+
+            is_dir = (
+                mode & 0x4000
+            ) != 0
 
         except Exception:
             is_dir = False
 
-        _write_line(write, depth, entry)
+        _write_line(
+            write,
+            depth,
+            entry,
+        )
 
         if is_dir:
             _walk(
@@ -58,14 +92,29 @@ def _walk(path, depth, maxdepth, write):
             )
 
 
-def main(path=".", maxdepth=5, out=None, collect=False):
-    write, close, result = fsio["output"](
-        out=out,
-        collect=collect,
-    )
+def main(
+    path=".",
+    maxdepth=5,
+    out=None,
+    collect=False,
+):
+    try:
+        write, close, result = fsio["output"](
+            out=out,
+            collect=collect,
+        )
+
+    except Exception as e:
+        print(
+            "tree: {}".format(e)
+        )
+        return False
 
     try:
-        write(path + "\n")
+        write(
+            path
+            + "\n"
+        )
 
         _walk(
             path,
@@ -86,4 +135,7 @@ def main(path=".", maxdepth=5, out=None, collect=False):
     finally:
         close()
 
-    return result()
+    if collect:
+        return result()
+
+    return None

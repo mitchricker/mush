@@ -13,18 +13,54 @@ DESCRIPTION
         - bytes
 
     Returns:
-        collect=False:
-            Prints results and returns counts.
 
         collect=True:
-            Returns structured results without printing.
 
-    Examples:
-        wc("boot.py")
+            single file:
+                (
+                    lines,
+                    words,
+                    bytes,
+                )
 
-        wc("a.txt", "b.txt")
+            multiple files:
+                (
+                    results,
+                    totals,
+                )
 
-        wc("log.txt", collect=True)
+                results:
+                    (
+                        path,
+                        lines,
+                        words,
+                        bytes,
+                    )
+
+                totals:
+                    (
+                        lines,
+                        words,
+                        bytes,
+                    )
+
+        collect=False:
+            None on success
+
+        False on error
+
+EXAMPLES
+    wc("boot.py")
+
+    wc(
+        "a.txt",
+        "b.txt",
+    )
+
+    wc(
+        "log.txt",
+        collect=True,
+    )
 """
 
 import mush
@@ -46,14 +82,15 @@ def _count_stream(path):
                 lines += 1
 
             if b in (
-                32,   # space
-                9,    # tab
-                10,   # newline
-                13,   # carriage return
+                32,
+                9,
+                10,
+                13,
             ):
                 if in_word:
                     words += 1
                     in_word = False
+
             else:
                 in_word = True
 
@@ -69,12 +106,10 @@ def _count_stream(path):
 
 def main(*paths, collect=False):
     if not paths:
-        msg = "wc: missing file operand"
-
-        if not collect:
-            print(msg)
-
-        return None
+        print(
+            "wc: missing file operand"
+        )
+        return False
 
     results = []
 
@@ -86,16 +121,14 @@ def main(*paths, collect=False):
         try:
             lines, words, bytes_ = _count_stream(path)
 
-        except OSError as e:
-            msg = "wc: {}: {}".format(
-                path,
-                e,
+        except Exception as e:
+            print(
+                "wc: {}: {}".format(
+                    path,
+                    e,
+                )
             )
-
-            if not collect:
-                print(msg)
-
-            return None
+            return False
 
         total_lines += lines
         total_words += words
@@ -110,30 +143,18 @@ def main(*paths, collect=False):
             )
         )
 
-        if not collect:
-            print(
-                "{:>6} {:>6} {:>6} {}".format(
-                    lines,
-                    words,
-                    bytes_,
-                    path,
-                )
-            )
-
     totals = (
         total_lines,
         total_words,
         total_bytes,
     )
 
-    if len(paths) > 1:
-        if not collect:
-            print(
-                "{:>6} {:>6} {:>6} total".format(
-                    total_lines,
-                    total_words,
-                    total_bytes,
-                )
+    if collect:
+        if len(paths) == 1:
+            return (
+                results[0][1],
+                results[0][2],
+                results[0][3],
             )
 
         return (
@@ -141,8 +162,23 @@ def main(*paths, collect=False):
             totals,
         )
 
-    return (
-        results[0][1],
-        results[0][2],
-        results[0][3],
-    )
+    for path, lines, words, bytes_ in results:
+        print(
+            "{:>6} {:>6} {:>6} {}".format(
+                lines,
+                words,
+                bytes_,
+                path,
+            )
+        )
+
+    if len(paths) > 1:
+        print(
+            "{:>6} {:>6} {:>6} total".format(
+                total_lines,
+                total_words,
+                total_bytes,
+            )
+        )
+
+    return None

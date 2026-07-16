@@ -1,3 +1,58 @@
+"""
+Internal filesystem I/O helper.
+
+Provides:
+    read_chunks()
+    iter_lines()
+    iter_lines_reverse()
+    decode()
+    output()
+
+Functions:
+
+    read_chunks(path, chunk=256)
+
+        Yield file contents in chunks.
+
+
+    iter_lines(path)
+
+        Iterate file lines.
+
+        Returns:
+            (
+                line_bytes,
+                newline_present
+            )
+
+
+    iter_lines_reverse(path)
+
+        Iterate file lines in reverse order.
+
+
+    decode(data)
+
+        Decode byte data into text.
+
+
+    output(out=None, collect=False)
+
+        Create an output writer.
+
+        Returns:
+            (
+                write_function,
+                close_function,
+                result_function
+            )
+
+        collect=True:
+            result() returns collected output.
+
+        collect=False:
+            result() returns True.
+"""
 import sys
 
 _CHUNK = 256
