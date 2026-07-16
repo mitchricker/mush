@@ -3,7 +3,7 @@ NAME
     md5sum - calculate MD5 checksums
 
 SYNOPSIS
-    md5sum(file1, [file2 ...])
+    md5sum(file1, [file2 ...], collect=False)
 
 DESCRIPTION
     Calculates MD5 hashes of files.
@@ -11,10 +11,31 @@ DESCRIPTION
     MD5 is intended for file integrity checking only.
     It is not suitable for cryptographic security.
 
+    Returns:
+        collect=True:
+            list of:
+                (
+                    checksum,
+                    path,
+                )
+
+        collect=False:
+            None on success
+
+        False on error
+
 EXAMPLES
     md5sum("boot.py")
 
-    md5sum("a.txt", "b.txt")
+    md5sum(
+        "a.txt",
+        "b.txt",
+    )
+
+    md5sum(
+        "boot.py",
+        collect=True,
+    )
 """
 
 import hashlib
@@ -39,31 +60,23 @@ def _md5(path):
     for chunk in fsio["read_chunks"](path):
         h.update(chunk)
 
-    return _hex(h.digest())
+    return _hex(
+        h.digest()
+    )
 
 
-def main(*paths):
+def main(*paths, collect=False):
     if not paths:
-        print("md5sum: missing file")
+        print(
+            "md5sum: missing file"
+        )
         return False
 
     results = []
-    success = True
 
     for path in paths:
         try:
             digest = _md5(path)
-
-            print(
-                "{}  {}".format(
-                    digest,
-                    path,
-                )
-            )
-
-            results.append(
-                (digest, path)
-            )
 
         except Exception as e:
             print(
@@ -72,12 +85,24 @@ def main(*paths):
                     e,
                 )
             )
-            success = False
+            return False
 
-    if not success:
-        return False
+        results.append(
+            (
+                digest,
+                path,
+            )
+        )
 
-    if len(results) == 1:
-        return results[0][0]
+        if not collect:
+            print(
+                "{}  {}".format(
+                    digest,
+                    path,
+                )
+            )
 
-    return results
+    if collect:
+        return results
+
+    return None

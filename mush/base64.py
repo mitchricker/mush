@@ -3,41 +3,55 @@ NAME
     base64 - encode/decode files using Base64
 
 SYNOPSIS
-    base64(file)
-    base64(file, decode=True)
+    base64(file, decode=False, out=None, collect=False)
 
 DESCRIPTION
     Stream-based Base64 encoder/decoder.
 
-EXAMPLES
-    base64("image.bin")
+OPTIONS
+    decode:
+        Decode Base64 input instead of encoding.
 
-    base64("data.b64", decode=True)
+    out:
+        Write output to a file instead of stdout.
+
+    collect:
+        Return generated output instead of writing.
+
+RETURNS
+    collect=False:
+        None on success
+        False on failure
+
+    collect=True:
+        Generated Base64 data.
+
+EXAMPLES
+    base64(
+        "image.bin"
+    )
+
+    base64(
+        "data.b64",
+        decode=True,
+    )
+
+    base64(
+        "image.bin",
+        collect=True,
+    )
 """
 
-import sys
 import mush
 
 fsio = mush._load_internal("_fsio")
+
 
 _B64 = (
     b"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
     b"abcdefghijklmnopqrstuvwxyz"
     b"0123456789+/"
 )
-
-
-def _write(data):
-    if isinstance(data, bytes):
-        data = data.decode("ascii")
-    sys.stdout.write(data)
-
-
-def _flush():
-    try:
-        sys.stdout.flush()
-    except Exception:
-        pass
 
 
 def _encode_block(block):
@@ -60,39 +74,20 @@ def _encode_block(block):
     ))
 
 
-def _encode_stream(path):
-    buf = b""
-
-    for chunk in fsio["read_chunks"](path):
-        buf += chunk
-
-        while len(buf) >= 3:
-            block = buf[:3]
-            buf = buf[3:]
-
-            _write(
-                _encode_block(block)
-            )
-
-    if buf:
-        pad = 3 - len(buf)
-encoded = bytearray(_encode_block(buf + b"\x00" * pad))
-        for i in range(pad):
-            encoded[-(i + 1)] = ord("=")
-
-        _write(bytes(encoded))
-
-    _write("\n")
-    _flush()
-
-
 def _decode_value(c):
     if c == ord("="):
         return 0
 
-    return _B64.find(
+    value = _B64.find(
         bytes((c,))
     )
+
+    if value < 0:
+        raise ValueError(
+            "invalid Base64 character"
+        )
+
+    return value
 
 
 def _decode_block(block):
@@ -128,41 +123,110 @@ def _decode_block(block):
     return out
 
 
-def _decode_stream(path):
+def _encode_stream(path, write):
     buf = b""
 
     for chunk in fsio["read_chunks"](path):
+
         buf += chunk
 
-        buf = b"".join(
-            buf.split()
+        while len(buf) >= 3:
+
+            write(
+                _encode_block(
+                    buf[:3]
+                ).decode("ascii")
+            )
+
+            buf = buf[3:]
+
+    if buf:
+
+        pad = 3 - len(buf)
+
+        encoded = bytearray(
+            _encode_block(
+                buf + (b"\x00" * pad)
+            )
+        )
+
+        for i in range(pad):
+            encoded[-(i + 1)] = ord("=")
+
+        write(
+            bytes(encoded).decode(
+                "ascii"
+            )
+        )
+
+    write("\n")
+
+
+def _decode_stream(path, write):
+    buf = b""
+
+    for chunk in fsio["read_chunks"](path):
+
+        buf += b"".join(
+            chunk.split()
         )
 
         while len(buf) >= 4:
-            block = buf[:4]
-            buf = buf[4:]
 
-            _write(
-                _decode_block(block)
+            write(
+                _decode_block(
+                    buf[:4]
+                )
             )
+
+            buf = buf[4:]
 
     if buf:
         raise ValueError(
             "invalid Base64 length"
         )
 
-    _write("\n")
-    _flush()
 
-
-def main(path, decode=False):
+def main(
+    path,
+    decode=False,
+    out=None,
+    collect=False,
+):
     if not path:
         print(
             "base64: missing file"
         )
-        return
+        return False
 
-    if decode:
-        _decode_stream(path)
-    else:
-        _encode_stream(path)
+    write, close, result = fsio["output"](
+        out=out,
+        collect=collect,
+    )
+
+    try:
+        if decode:
+            _decode_stream(
+                path,
+                write,
+            )
+
+        else:
+            _encode_stream(
+                path,
+                write,
+            )
+
+    except Exception as e:
+        print(
+            "base64: {}".format(
+                e
+            )
+        )
+
+        return False
+
+    finally:
+        close()
+
+    return result()

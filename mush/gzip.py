@@ -3,42 +3,104 @@ NAME
     gzip - compress files using gzip format
 
 SYNOPSIS
-    gzip(file)
-    gzip(file, out)
+    gzip(file, out=None, collect=False)
 
 DESCRIPTION
     Stream-based gzip compressor using MicroPython deflate.
 
     Compression support depends on firmware capabilities.
 
-EXAMPLES
-    gzip("test.txt")
+    Returns:
+        collect=False:
+            None on success.
 
-    gzip("test.txt", "test.txt.gz")
+        collect=True:
+            Output path.
+
+        False on failure.
+
+EXAMPLES
+    gzip(
+        "test.txt"
+    )
+
+    gzip(
+        "test.txt",
+        out="test.txt.gz",
+    )
+
+    gzip(
+        "test.txt",
+        collect=True,
+    )
 """
+
 import deflate
-def main(path, out=None):
+import mush
+
+fsio = mush._load_internal("_fsio")
+
+
+def main(
+    path,
+    out=None,
+    collect=False,
+):
     if not path:
-        print("gzip: missing file")
-        return
-    if not hasattr(deflate, "compress"):
-        raise OSError(
-            "gzip compression not supported by this firmware"
+        print(
+            "gzip: missing file"
         )
-    if out is None:
-        out = path + ".gz"
-    src = open(path, "rb")
+
+        return False
+
     try:
-        dst = open(out, "wb")
+        if not hasattr(
+            deflate,
+            "DeflateIO",
+        ):
+            raise OSError(
+                "gzip streaming not supported by this firmware"
+            )
+
+        if out is None:
+            out = path + ".gz"
+
+        dst = open(
+            out,
+            "wb",
+        )
+
         try:
-            data = src.read()
-            compressed = deflate.compress(
-                data,
+            gz = deflate.DeflateIO(
+                dst,
                 deflate.GZIP,
             )
-            dst.write(compressed)
+
+            try:
+                for chunk in fsio["read_chunks"](path):
+                    gz.write(chunk)
+
+            finally:
+                gz.close()
+
         finally:
             dst.close()
-    finally:
-        src.close()
-    return out
+
+    except Exception as e:
+        print(
+            "gzip: {}".format(e)
+        )
+
+        return False
+
+    if collect:
+        return out
+
+    print(
+        "compressed: {} -> {}".format(
+            path,
+            out,
+        )
+    )
+
+    return None

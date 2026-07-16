@@ -3,37 +3,50 @@ NAME
     cut - extract portions of lines
 
 SYNOPSIS
-    cut(path, fields=None, delimiter="\\t",
-        byte_ranges=None, out=None, collect=False)
+    cut(path, fields=None, delimiter="\\t", byte_ranges=None,
+        out=None, collect=False)
 
 DESCRIPTION
     Extracts fields or byte ranges from text.
 
     fields:
         Comma-separated 1-based field numbers.
+
         Example:
             "1,3,5"
 
     byte_ranges:
         Comma-separated 1-based byte positions or ranges.
+
         Example:
             "1-5,10"
 
     Returns:
+
         collect=True:
             list of extracted lines
 
         collect=False:
-            True on success
-
-        False on error
+            None on success
+            False on error
 
 EXAMPLES
-    cut("passwd", fields="1,3", delimiter=":")
+    cut(
+        "passwd",
+        fields="1,3",
+        delimiter=":",
+    )
 
-    cut("file.txt", byte_ranges="1-10")
+    cut(
+        "file.txt",
+        byte_ranges="1-10",
+    )
 
-    cut("data.txt", fields="2", collect=True)
+    cut(
+        "data.txt",
+        fields="2",
+        collect=True,
+    )
 """
 
 import mush
@@ -51,25 +64,22 @@ def _parse_list(spec):
             continue
 
         if "-" in part:
-            a, b = part.split("-", 1)
-
-            start = int(a) if a else 1
-            end = int(b) if b else None
+            start, end = part.split("-", 1)
 
             result.append(
                 (
-                    start,
-                    end,
+                    int(start) if start else 1,
+                    int(end) if end else None,
                 )
             )
 
         else:
-            n = int(part)
+            value = int(part)
 
             result.append(
                 (
-                    n,
-                    n,
+                    value,
+                    value,
                 )
             )
 
@@ -77,39 +87,42 @@ def _parse_list(spec):
 
 
 def _select_bytes(data, ranges):
-    out = bytearray()
+    result = bytearray()
 
     for start, end in ranges:
         start -= 1
 
         if end is None:
-            out.extend(data[start:])
+            result.extend(
+                data[start:]
+            )
 
         else:
-            out.extend(
+            result.extend(
                 data[start:end]
             )
 
-    return bytes(out)
+    return bytes(result)
 
 
 def _select_fields(line, fields, delimiter):
     parts = line.split(delimiter)
-    selected = []
+    result = []
 
     for start, end in fields:
         if end is None:
             end = len(parts)
 
-        for index in range(
-            start - 1,
-            min(end, len(parts)),
-        ):
-            selected.append(
-                parts[index]
-            )
+        result.extend(
+            parts[
+                start - 1:min(
+                    end,
+                    len(parts),
+                )
+            ]
+        )
 
-    return delimiter.join(selected)
+    return delimiter.join(result)
 
 
 def main(
@@ -121,10 +134,15 @@ def main(
     collect=False,
 ):
     if not path:
-        print("cut: missing file")
+        print(
+            "cut: missing file"
+        )
         return False
 
-    if fields is None and byte_ranges is None:
+    if (
+        fields is None
+        and byte_ranges is None
+    ):
         print(
             "cut: specify fields= or byte_ranges="
         )
@@ -149,22 +167,16 @@ def main(
         )
         return False
 
-    if collect:
-        result = []
+    values = []
 
-        def emit(value):
-            result.append(value)
-
-        close = None
-
-    else:
-        write, close, get_result = fsio["output"](
+    if not collect:
+        write, close, _ = fsio["output"](
             out=out,
         )
 
-        def emit(value):
-            write(value)
-            write("\n")
+    else:
+        write = None
+        close = None
 
     try:
         for line, terminated in fsio["iter_lines"](path):
@@ -184,7 +196,12 @@ def main(
                     delimiter,
                 )
 
-            emit(value)
+            if collect:
+                values.append(value)
+
+            else:
+                write(value)
+                write("\n")
 
     except OSError as e:
         print(
@@ -193,6 +210,7 @@ def main(
                 e,
             )
         )
+
         return False
 
     finally:
@@ -200,6 +218,6 @@ def main(
             close()
 
     if collect:
-        return result
+        return values
 
-    return get_result()
+    return None

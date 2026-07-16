@@ -3,31 +3,47 @@ NAME
     ipcalc - calculate IPv4 network information
 
 SYNOPSIS
-    ipcalc(address, netmask=None)
+    ipcalc(address, netmask=None, collect=False)
 
 DESCRIPTION
     Calculates IPv4 network, broadcast, and host information.
 
     Returns:
-        (
-            address,
-            netmask,
-            cidr,
-            network,
-            broadcast,
-        )
+        collect=False:
+            None on success.
+
+        collect=True:
+            Tuple containing:
+            (
+                address,
+                netmask,
+                cidr,
+                network,
+                broadcast
+            )
+
+        False on failure.
 
 EXAMPLES
-    ipcalc("192.168.1.50/24")
+    ipcalc(
+        "192.168.1.50/24"
+    )
 
     ipcalc(
         "192.168.1.50",
         netmask="255.255.255.0",
     )
+
+    ipcalc(
+        "192.168.1.50/24",
+        collect=True,
+    )
 """
 
 
 def _parse_ip(ip):
+    ip = ip.strip()
+
     parts = ip.split(".")
 
     if len(parts) != 4:
@@ -35,10 +51,24 @@ def _parse_ip(ip):
             "invalid IPv4 address"
         )
 
-    return tuple(
-        int(x)
-        for x in parts
-    )
+    result = []
+
+    for part in parts:
+        if not part:
+            raise ValueError(
+                "invalid IPv4 address"
+            )
+
+        value = int(part)
+
+        if value < 0 or value > 255:
+            raise ValueError(
+                "invalid IPv4 address"
+            )
+
+        result.append(value)
+
+    return tuple(result)
 
 
 def _format_ip(ip):
@@ -49,6 +79,11 @@ def _format_ip(ip):
 
 
 def _mask_from_prefix(bits):
+    if bits < 0 or bits > 32:
+        raise ValueError(
+            "invalid CIDR prefix"
+        )
+
     if bits == 0:
         return 0
 
@@ -79,68 +114,142 @@ def _int_ip(value):
 
 def _prefix(mask):
     bits = 0
+    seen_zero = False
 
-    while mask:
-        bits += mask & 1
-        mask >>= 1
+    for i in range(32):
+        bit = (
+            mask >> (31 - i)
+        ) & 1
+
+        if bit:
+            if seen_zero:
+                raise ValueError(
+                    "invalid netmask"
+                )
+
+            bits += 1
+
+        else:
+            seen_zero = True
 
     return bits
 
 
-def main(address, netmask=None):
-    if "/" in address:
-        addr, prefix = address.split("/", 1)
-        bits = int(prefix)
+def _parse_prefix(value):
+    bits = int(value)
 
-    else:
-        addr = address
+    if bits < 0 or bits > 32:
+        raise ValueError(
+            "invalid CIDR prefix"
+        )
+
+    return bits
+
+
+def main(
+    address,
+    netmask=None,
+    collect=False,
+):
+    try:
+        if not isinstance(address, str):
+            raise ValueError(
+                "invalid IPv4 address"
+            )
+
+        address = address.strip()
+
         bits = None
 
-    ip = _parse_ip(addr)
+        if "/" in address:
+            addr, prefix = address.split(
+                "/",
+                1,
+            )
 
-    if netmask:
-        mask = _ip_int(
-            _parse_ip(netmask)
+            bits = _parse_prefix(
+                prefix
+            )
+
+        else:
+            addr = address
+
+        ip = _parse_ip(addr)
+
+        if netmask is not None:
+            mask = _ip_int(
+                _parse_ip(netmask)
+            )
+
+            cidr = _prefix(mask)
+
+        elif bits is not None:
+            mask = _mask_from_prefix(
+                bits
+            )
+
+            cidr = bits
+
+        else:
+            raise ValueError(
+                "missing netmask"
+            )
+
+        ip_num = _ip_int(ip)
+
+        network = ip_num & mask
+
+        broadcast = (
+            network
+            | (~mask & 0xffffffff)
         )
 
-    elif bits is not None:
-        mask = _mask_from_prefix(bits)
-
-    else:
-        raise ValueError(
-            "missing netmask"
+        result = (
+            _format_ip(ip),
+            _format_ip(_int_ip(mask)),
+            cidr,
+            _format_ip(_int_ip(network)),
+            _format_ip(_int_ip(broadcast)),
         )
 
-    ip_num = _ip_int(ip)
+    except Exception as e:
+        print(
+            "ipcalc: {}".format(e)
+        )
 
-    network = ip_num & mask
-    broadcast = (
-        network
-        | (~mask & 0xffffffff)
-    )
+        return False
 
-    address = _format_ip(ip)
-    netmask = _format_ip(
-        _int_ip(mask)
-    )
-    cidr = _prefix(mask)
-    network = _format_ip(
-        _int_ip(network)
-    )
-    broadcast = _format_ip(
-        _int_ip(broadcast)
+    if collect:
+        return result
+
+    print(
+        "Address:     {}".format(
+            result[0]
+        )
     )
 
-    print("Address:     {}".format(address))
-    print("Netmask:     {}".format(netmask))
-    print("CIDR:        /{}".format(cidr))
-    print("Network:     {}".format(network))
-    print("Broadcast:   {}".format(broadcast))
-
-    return (
-        address,
-        netmask,
-        cidr,
-        network,
-        broadcast,
+    print(
+        "Netmask:     {}".format(
+            result[1]
+        )
     )
+
+    print(
+        "CIDR:        /{}".format(
+            result[2]
+        )
+    )
+
+    print(
+        "Network:     {}".format(
+            result[3]
+        )
+    )
+
+    print(
+        "Broadcast:   {}".format(
+            result[4]
+        )
+    )
+
+    return None

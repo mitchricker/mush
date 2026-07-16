@@ -1,3 +1,85 @@
+"""
+Internal system information helper.
+
+Provides:
+    mem_info()
+    fs_info()
+    cpu_info()
+    uname_info()
+    format_size()
+    percent()
+    summary()
+
+Functions:
+
+    mem_info()
+
+        Return memory usage information.
+
+        Returns:
+            (
+                free,
+                allocated,
+                total
+            )
+
+
+    fs_info(path="/")
+
+        Return filesystem usage information.
+
+        Returns:
+            (
+                block_size,
+                total_blocks,
+                free_blocks,
+                total_bytes,
+                used_bytes,
+                free_bytes
+            )
+
+
+    cpu_info()
+
+        Return runtime and CPU information.
+
+        Returns:
+            (
+                implementation,
+                platform,
+                frequency,
+                reset_cause
+            )
+
+
+    uname_info()
+
+        Return system identification information.
+
+        Returns:
+            (
+                system,
+                node,
+                release,
+                version,
+                machine
+            )
+
+
+    format_size(size)
+
+        Format bytes as a human-readable size.
+
+
+    percent(used, total)
+
+        Calculate usage percentage.
+
+
+    summary(path="/")
+
+        Return combined runtime summary.
+"""
 import gc
 import os
 import sys

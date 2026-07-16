@@ -3,10 +3,28 @@ NAME
     lscpu - display CPU information
 
 SYNOPSIS
-    lscpu()
+    lscpu(collect=False)
 
 DESCRIPTION
     Displays CPU and runtime information.
+
+    Returns:
+        collect=True:
+            (
+                architecture,
+                platform,
+                frequency,
+                reset cause,
+            )
+
+        collect=False:
+            None on success
+            False on failure
+
+EXAMPLES
+    lscpu()
+
+    lscpu(collect=True)
 """
 
 import mush
@@ -14,40 +32,75 @@ import mush
 sysinfo = mush._load_internal("_sys")
 
 
-def main():
-    arch, platform, freq, reset = sysinfo["cpu_info"]()
+def main(collect=False):
+    try:
+        arch, platform, freq, reset = (
+            sysinfo["cpu_info"]()
+        )
 
-    lines = []
+        result = (
+            arch,
+            platform,
+            freq,
+            reset,
+        )
 
-    lines.append("{:<10} {}".format(
-        "arch",
-        arch,
-    ))
+        if collect:
+            return result
 
-    lines.append("{:<10} {}".format(
-        "platform",
-        platform,
-    ))
+        lines = []
 
-    if freq:
-        if isinstance(freq, int) and freq >= 1000000:
-            freq = "{} MHz".format(
-                freq // 1000000,
+        lines.append(
+            "{:<10} {}".format(
+                "arch",
+                arch,
+            )
+        )
+
+        lines.append(
+            "{:<10} {}".format(
+                "platform",
+                platform,
+            )
+        )
+
+        if freq:
+            display_freq = freq
+
+            if (
+                isinstance(freq, int)
+                and freq >= 1000000
+            ):
+                display_freq = (
+                    "{} MHz".format(
+                        freq // 1000000
+                    )
+                )
+
+            lines.append(
+                "{:<10} {}".format(
+                    "freq",
+                    display_freq,
+                )
             )
 
-        lines.append("{:<10} {}".format(
-            "freq",
-            freq,
-        ))
+        if reset is not None:
+            lines.append(
+                "{:<10} {}".format(
+                    "reset",
+                    reset,
+                )
+            )
 
-    if reset is not None:
-        lines.append("{:<10} {}".format(
-            "reset",
-            reset,
-        ))
+        print(
+            "\n".join(lines)
+        )
 
-    result = "\n".join(lines)
+        return None
 
-    print(result)
+    except Exception as e:
+        print(
+            "lscpu: {}".format(e)
+        )
 
-    return lines
+        return False

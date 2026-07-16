@@ -3,19 +3,37 @@ NAME
     ls - list directory contents
 
 SYNOPSIS
-    ls([path="."])
+    ls(path=".", collect=False)
 
 DESCRIPTION
     Lists files and directories.
 
     Displays type, size, and name.
 
-    Returns the number of entries displayed.
+    Returns:
+
+        collect=True:
+            list of entry tuples:
+
+            (
+                name,
+                type,
+                size
+            )
+
+        collect=False:
+            None on success
+            False on error
 
 EXAMPLES
     ls()
 
     ls("/flash")
+
+    ls(
+        "/flash",
+        collect=True,
+    )
 """
 
 import os
@@ -35,21 +53,27 @@ def _path_join(path, name):
     return path + "/" + name
 
 
-def main(path="."):
+def main(path=".", collect=False):
     try:
         entries = os.listdir(path)
-    except OSError as e:
-        print("ls: cannot access '{}': {}".format(path, e))
-        return 0
 
-    print("{:<4} {:>10} {}".format(
-        "TYPE",
-        "SIZE",
-        "NAME",
-    ))
+    except OSError as e:
+        print(
+            "ls: cannot access '{}': {}".format(
+                path,
+                e,
+            )
+        )
+
+        return False
+
+    results = []
 
     for name in entries:
-        full = _path_join(path, name)
+        full = _path_join(
+            path,
+            name,
+        )
 
         typ = "?"
         size = 0
@@ -57,18 +81,42 @@ def main(path="."):
         try:
             st = os.stat(full)
 
-            if _is_dir(st[0]): typ = "d"
-            else: typ = "-"
+            if _is_dir(st[0]):
+                typ = "d"
+            else:
+                typ = "-"
 
             size = st[6]
 
         except OSError:
             pass
 
-        print("{:<4} {:>10} {}".format(
-            typ,
-            size,
-            name,
-        ))
+        results.append(
+            (
+                name,
+                typ,
+                size,
+            )
+        )
 
-    return entries
+    if collect:
+        return results
+
+    print(
+        "{:<4} {:>10} {}".format(
+            "TYPE",
+            "SIZE",
+            "NAME",
+        )
+    )
+
+    for name, typ, size in results:
+        print(
+            "{:<4} {:>10} {}".format(
+                typ,
+                size,
+                name,
+            )
+        )
+
+    return None

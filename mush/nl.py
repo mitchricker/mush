@@ -11,6 +11,14 @@ DESCRIPTION
 
     If called without arguments, reads from standard input.
 
+    Returns:
+        collect=False:
+            None on success
+            False on failure
+
+        collect=True:
+            Numbered text
+
 EXAMPLES
     nl("boot.py")
     nl("a.txt", "b.txt")
@@ -39,32 +47,53 @@ def main(*paths, out=None, collect=False):
         collect=collect,
     )
 
+    success = True
+
     try:
         lineno = 1
 
         if not paths:
-            for line in sys.stdin:
-                lineno = _write_line(
-                    write,
-                    lineno,
-                    line.rstrip("\n").encode(),
-                    True,
-                )
-            return result()
-
-        for path in paths:
             try:
-                for line, newline in fsio["iter_lines"](path):
+                for line in sys.stdin:
                     lineno = _write_line(
                         write,
                         lineno,
-                        line,
-                        newline,
+                        line.rstrip("\n").encode(),
+                        True,
                     )
-            except OSError as e:
-                print("nl: {}: {}".format(path, e))
+            except Exception as e:
+                print(
+                    "nl: stdin: {}".format(e)
+                )
+                return False
+
+        else:
+            for path in paths:
+                try:
+                    for line, newline in fsio["iter_lines"](path):
+                        lineno = _write_line(
+                            write,
+                            lineno,
+                            line,
+                            newline,
+                        )
+
+                except OSError as e:
+                    print(
+                        "nl: {}: {}".format(
+                            path,
+                            e,
+                        )
+                    )
+                    success = False
 
     finally:
         close()
 
-    return result()
+    if not success:
+        return False
+
+    if collect:
+        return result()
+
+    return None

@@ -3,14 +3,36 @@ NAME
     sha256sum - calculate SHA-256 checksums
 
 SYNOPSIS
-    sha256sum(file1, [file2 ...])
+    sha256sum(file1, [file2 ...], collect=False)
 
 DESCRIPTION
     Calculates SHA-256 hashes of files.
 
+    Returns:
+        collect=True:
+            list of:
+                (
+                    digest,
+                    filename,
+                )
+
+        collect=False:
+            None on success
+
+        False on error
+
 EXAMPLES
     sha256sum("boot.py")
-    sha256sum("a.txt", "b.txt")
+
+    sha256sum(
+        "a.txt",
+        "b.txt",
+    )
+
+    sha256sum(
+        "boot.py",
+        collect=True,
+    )
 """
 
 import hashlib
@@ -35,31 +57,23 @@ def _sha256(path):
     for chunk in fsio["read_chunks"](path):
         h.update(chunk)
 
-    return _hex(h.digest())
+    return _hex(
+        h.digest()
+    )
 
 
-def main(*paths):
+def main(*paths, collect=False):
     if not paths:
-        print("sha256sum: missing file")
+        print(
+            "sha256sum: missing file"
+        )
         return False
 
     results = []
-    success = True
 
     for path in paths:
         try:
             digest = _sha256(path)
-
-            print(
-                "{}  {}".format(
-                    digest,
-                    path,
-                )
-            )
-
-            results.append(
-                (digest, path)
-            )
 
         except Exception as e:
             print(
@@ -68,12 +82,25 @@ def main(*paths):
                     e,
                 )
             )
-            success = False
 
-    if not success:
-        return False
+            return False
 
-    if len(results) == 1:
-        return results[0][0]
+        results.append(
+            (
+                digest,
+                path,
+            )
+        )
 
-    return results
+        if not collect:
+            print(
+                "{}  {}".format(
+                    digest,
+                    path,
+                )
+            )
+
+    if collect:
+        return results
+
+    return None

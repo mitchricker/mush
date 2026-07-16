@@ -9,16 +9,22 @@ DESCRIPTION
     Reads a file and removes consecutive duplicate lines.
 
     Returns:
-        count of unique lines normally
 
-        list of lines with collect=True
+        collect=True:
+            list of unique lines
+
+        collect=False:
+            None on success
 
         False on error
 
 EXAMPLES
     uniq("log.txt")
 
-    uniq("log.txt", collect=True)
+    uniq(
+        "log.txt",
+        collect=True,
+    )
 """
 
 import mush
@@ -26,15 +32,26 @@ import mush
 fsio = mush._load_internal("_fsio")
 
 
-def main(path, out=None, collect=False):
+def main(
+    path,
+    out=None,
+    collect=False,
+):
+    if not path:
+        print(
+            "uniq: missing file"
+        )
+        return False
+
     previous = None
-    count = 0
 
     if collect:
         result = []
 
         def emit(line):
-            result.append(line)
+            result.append(
+                fsio["decode"](line)
+            )
 
     else:
         write, close, output_result = fsio["output"](
@@ -49,15 +66,12 @@ def main(path, out=None, collect=False):
 
     try:
         for line, terminated in fsio["iter_lines"](path):
+
             if line != previous:
                 emit(line)
                 previous = line
-                count += 1
 
-    except OSError as e:
-        if not collect:
-            close()
-
+    except Exception as e:
         print(
             "uniq: {}: {}".format(
                 path,
@@ -74,4 +88,4 @@ def main(path, out=None, collect=False):
     if collect:
         return result
 
-    return count
+    return None

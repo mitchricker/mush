@@ -9,14 +9,35 @@ DESCRIPTION
     Compares two files and reports the first difference.
 
     Returns:
-        True  - files are identical
-        False - files differ
-        None  - comparison error
+
+        collect=False:
+            None on success
+            False on failure
+
+        collect=True:
+            (
+                identical,
+                message,
+            )
+
+            identical:
+                True  - files match
+                False - files differ
+
+            message:
+                Difference or error text.
 
 EXAMPLES
-    cmp("firmware1.bin", "firmware2.bin")
+    cmp(
+        "firmware1.bin",
+        "firmware2.bin",
+    )
 
-    cmp("a.bin", "b.bin", collect=True)
+    cmp(
+        "a.bin",
+        "b.bin",
+        collect=True,
+    )
 """
 
 import mush
@@ -26,21 +47,50 @@ fsio = mush._load_internal("_fsio")
 _CHUNK = 256
 
 
+def _fail(message, collect):
+    if collect:
+        return (
+            False,
+            message,
+        )
+
+    print(message)
+    return False
+
+
+def _done(identical, message, collect):
+    if collect:
+        return (
+            identical,
+            message,
+        )
+
+    if message:
+        print(message)
+        return False
+
+    return None
+
+
 def main(file1, file2, collect=False):
     if not file1 or not file2:
-        msg = "cmp: missing file"
-
-        if collect:
-            return msg
-
-        print(msg)
-        return None
+        return _fail(
+            "cmp: missing file",
+            collect,
+        )
 
     offset = 0
 
     try:
-        a_iter = fsio["read_chunks"](file1, _CHUNK)
-        b_iter = fsio["read_chunks"](file2, _CHUNK)
+        a_iter = fsio["read_chunks"](
+            file1,
+            _CHUNK,
+        )
+
+        b_iter = fsio["read_chunks"](
+            file2,
+            _CHUNK,
+        )
 
         a_buf = b""
         b_buf = b""
@@ -56,34 +106,34 @@ def main(file1, file2, collect=False):
                 try:
                     b_buf = next(b_iter)
                 except StopIteration:
-                    b_buf = b""
+                    b_buf = ""
 
             if not a_buf and not b_buf:
-                return True
+                return _done(
+                    True,
+                    None,
+                    collect,
+                )
 
             if not a_buf:
-                msg = (
-                    "cmp: EOF on {} after {} bytes"
-                    .format(file1, offset)
+                return _done(
+                    False,
+                    "cmp: EOF on {} after {} bytes".format(
+                        file1,
+                        offset,
+                    ),
+                    collect,
                 )
-
-                if collect:
-                    return msg
-
-                print(msg)
-                return False
 
             if not b_buf:
-                msg = (
-                    "cmp: EOF on {} after {} bytes"
-                    .format(file2, offset)
+                return _done(
+                    False,
+                    "cmp: EOF on {} after {} bytes".format(
+                        file2,
+                        offset,
+                    ),
+                    collect,
                 )
-
-                if collect:
-                    return msg
-
-                print(msg)
-                return False
 
             length = min(
                 len(a_buf),
@@ -92,33 +142,28 @@ def main(file1, file2, collect=False):
 
             for i in range(length):
                 if a_buf[i] != b_buf[i]:
-                    msg = (
-                        "{} {} differ: byte {}, "
-                        "{:02x} != {:02x}"
-                    ).format(
-                        file1,
-                        file2,
-                        offset,
-                        a_buf[i],
-                        b_buf[i],
+                    return _done(
+                        False,
+                        (
+                            "{} {} differ: "
+                            "byte {}, {:02x} != {:02x}"
+                        ).format(
+                            file1,
+                            file2,
+                            offset,
+                            a_buf[i],
+                            b_buf[i],
+                        ),
+                        collect,
                     )
-
-                    if collect:
-                        return msg
-
-                    print(msg)
-                    return False
 
                 offset += 1
 
             a_buf = a_buf[length:]
             b_buf = b_buf[length:]
 
-    except OSError as e:
-        msg = "cmp: {}".format(e)
-
-        if collect:
-            return msg
-
-        print(msg)
-        return None
+    except Exception as e:
+        return _fail(
+            "cmp: {}".format(e),
+            collect,
+        )

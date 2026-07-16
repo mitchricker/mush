@@ -8,9 +8,19 @@ SYNOPSIS
 DESCRIPTION
     Streams file contents using mush filesystem helpers.
 
+    Returns:
+        collect=False:
+            None on success
+            False on failure
+
+        collect=True:
+            file contents as bytes or string
+
 EXAMPLES
     cat("boot.py")
+
     cat("image.bin", out="copy.bin")
+
     cat("config.txt", collect=True)
 """
 
@@ -33,8 +43,14 @@ def main(*paths, out=None, collect=False):
             try:
                 data = sys.stdin.read()
                 write(data)
+
             except Exception as e:
-                print("cat: stdin: {}".format(e))
+                print(
+                    "cat: stdin: {}".format(
+                        e,
+                    )
+                )
+
                 return False
 
         for path in paths:
@@ -49,6 +65,7 @@ def main(*paths, out=None, collect=False):
                         e,
                     )
                 )
+
                 success = False
 
     finally:
@@ -57,4 +74,7 @@ def main(*paths, out=None, collect=False):
     if not success:
         return False
 
-    return result()
+    if collect:
+        return result()
+
+    return None

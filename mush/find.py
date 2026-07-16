@@ -3,7 +3,8 @@ NAME
     find - search files in directory tree
 
 SYNOPSIS
-    find(path, name=None, contains=None, maxdepth=10, out=None, collect=False)
+    find(path, name=None, contains=None, maxdepth=10,
+         out=None, collect=False)
 
 DESCRIPTION
     Recursively searches a directory tree.
@@ -14,18 +15,31 @@ DESCRIPTION
         - limited recursion depth (maxdepth)
 
     Returns:
-        - count of matches normally
-        - list of matches with collect=True
-        - False on error
+        collect=True:
+            list of matching paths
+
+        collect=False:
+            None on success
+
+        False on error
 
 EXAMPLES
     find("/")
 
-    find("/", name="config.json")
+    find(
+        "/flash",
+        name="config.json",
+    )
 
-    find("/flash", contains=".py")
+    find(
+        "/flash",
+        contains=".py",
+    )
 
-    find("/", collect=True)
+    find(
+        "/",
+        collect=True,
+    )
 """
 
 import os
@@ -54,30 +68,34 @@ def _join(path, name):
     return path + "/" + name
 
 
-def _walk(path, name, contains, depth, maxdepth, emit):
+def _walk(
+    path,
+    name,
+    contains,
+    depth,
+    maxdepth,
+    emit,
+):
     if depth > maxdepth:
-        return 0
+        return
 
-    count = 0
-
-    try:
-        entries = os.listdir(path)
-
-    except Exception:
-        return 0
-
-    for entry in entries:
-        full = _join(path, entry)
+    for entry in os.listdir(path):
+        full = _join(
+            path,
+            entry,
+        )
 
         try:
             mode = os.stat(full)[0]
-            is_dir = (mode & 0x4000) != 0
+            is_dir = (
+                mode & 0x4000
+            ) != 0
 
         except Exception:
             is_dir = False
 
         if is_dir:
-            count += _walk(
+            _walk(
                 full,
                 name,
                 contains,
@@ -86,11 +104,12 @@ def _walk(path, name, contains, depth, maxdepth, emit):
                 emit,
             )
 
-        elif _match(entry, name, contains):
+        elif _match(
+            entry,
+            name,
+            contains,
+        ):
             emit(full)
-            count += 1
-
-    return count
 
 
 def main(
@@ -101,20 +120,31 @@ def main(
     out=None,
     collect=False,
 ):
+    if not path:
+        print(
+            "find: missing path"
+        )
+
+        return False
+
     matches = []
 
     if collect:
+
         def emit(value):
             matches.append(value)
 
     else:
-        write, close, result = fsio["output"](out=out)
+        write, close, result = fsio["output"](
+            out=out,
+        )
 
         def emit(value):
-            write(value + "\n")
+            write(value)
+            write("\n")
 
     try:
-        count = _walk(
+        _walk(
             path,
             name,
             contains,
@@ -124,10 +154,10 @@ def main(
         )
 
     except Exception as e:
-        if not collect:
-            close()
+        print(
+            "find: {}".format(e)
+        )
 
-        print("find: {}".format(e))
         return False
 
     finally:
@@ -137,4 +167,4 @@ def main(
     if collect:
         return matches
 
-    return count
+    return None

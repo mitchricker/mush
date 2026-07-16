@@ -12,21 +12,38 @@ DESCRIPTION
     This is NOT ICMP ping. It tests TCP reachability.
 
     Returns:
-        {
-            "sent": count,
-            "received": successful,
-            "results": [(sequence, milliseconds), ...]
-        }
+        collect=False:
+            None on success
+            False on failure
 
-    With collect=False, results are printed and only the
-    summary tuple is returned.
+        collect=True:
+            (
+                sent,
+                received,
+                [
+                    (sequence, milliseconds),
+                    ...
+                ]
+            )
 
 EXAMPLES
     ping("192.168.1.1")
 
-    ping("example.com", port=443)
+    ping(
+        "example.com",
+        port=443,
+    )
 
-    ping("8.8.8.8", port=53, count=0)
+    ping(
+        "8.8.8.8",
+        port=53,
+        count=0,
+    )
+
+    ping(
+        "example.com",
+        collect=True,
+    )
 """
 
 import time
@@ -42,6 +59,18 @@ def main(
     timeout=1000,
     collect=False,
 ):
+    if not host:
+        print(
+            "ping: missing host"
+        )
+        return False
+
+    if count < 0:
+        print(
+            "ping: invalid count"
+        )
+        return False
+
     if not collect:
         print(
             "TCP PING {}:{}".format(
@@ -51,15 +80,17 @@ def main(
         )
         print()
 
-    results = [] if collect else None
+    results = []
 
-    ok = 0
+    received = 0
     sent = 0
 
     try:
         while True:
             if count and sent >= count:
                 break
+
+            sequence = sent
 
             start = time.ticks_ms()
             sock = None
@@ -76,16 +107,20 @@ def main(
                     start,
                 )
 
-                ok += 1
+                received += 1
 
                 if collect:
                     results.append(
-                        (sent, ms)
+                        (
+                            sequence,
+                            ms,
+                        )
                     )
+
                 else:
                     print(
                         "seq={} time={} ms".format(
-                            sent,
+                            sequence,
                             ms,
                         )
                     )
@@ -94,7 +129,7 @@ def main(
                 if not collect:
                     print(
                         "seq={} timeout".format(
-                            sent
+                            sequence,
                         )
                     )
 
@@ -106,24 +141,36 @@ def main(
 
     except KeyboardInterrupt:
         if not collect:
-            print("\nping stopped by user")
+            print(
+                "\nping stopped by user"
+            )
 
     if collect:
         return (
             sent,
-            ok,
+            received,
             results,
         )
 
+    if not received and sent:
+        print()
+
+        print(
+            "{} sent, {} received".format(
+                sent,
+                received,
+            )
+        )
+
+        return None
+
     print()
+
     print(
         "{} sent, {} received".format(
             sent,
-            ok,
+            received,
         )
     )
 
-    return (
-        sent,
-        ok,
-    )
+    return None

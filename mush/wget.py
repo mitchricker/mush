@@ -3,26 +3,19 @@ NAME
     wget - download files over HTTP
 
 SYNOPSIS
-    wget(
-        url,
-        out=None,
-        timeout=5000,
-        headers=None,
-        redirects=5,
-        recursive=False,
-        depth=1,
-        max_files=16,
-        progress=True,
-    )
+    wget(url, out=None, timeout=5000, headers=None, redirects=5,
+         recursive=False, depth=1, max_files=16,
+         progress=True, collect=False)
 
 DESCRIPTION
     Downloads files using HTTP GET.
 
     Supports:
+        - HTTPS
         - redirects
         - streamed writes
         - atomic output
-        - shallow recursive HTML downloads
+        - recursive HTML downloads
 
 OPTIONS
     out:
@@ -49,6 +42,25 @@ OPTIONS
     progress:
         Display download progress.
 
+    collect:
+        Return download information.
+
+RETURNS
+    collect=True:
+        Dictionary containing:
+            url
+            output
+            bytes
+            links
+
+        Recursive:
+            list of download dictionaries
+
+    collect=False:
+        None on success
+
+    False on failure.
+
 EXAMPLES
     wget(
         "https://example.com/file.bin"
@@ -59,108 +71,126 @@ EXAMPLES
         recursive=True,
         depth=1,
     )
+
+    wget(
+        "https://example.com/file.bin",
+        collect=True,
+    )
 """
-__doc__ = """
-NAME
-    wget - download files over HTTP
 
-SYNOPSIS
-    wget(url, out=None, timeout=5000, headers=None,
-         redirects=5, recursive=False, depth=1,
-         max_files=16, progress=True)
-
-DESCRIPTION
-    Downloads files using HTTP GET.
-
-    Supports:
-        - redirects
-        - streamed writes
-        - atomic output
-        - recursive HTML downloads
-"""
 import re
 import mush
+
 http = mush._load_internal("_http")
 net = mush._load_internal("_net")
 fsio = mush._load_internal("_fsio")
+
+
 def _connect(info, timeout):
     sock = net["tcp_connect"](
         info["host"],
         info["port"],
         timeout,
     )
+
     if info["tls"]:
         sock = net["tls_wrap"](
             sock,
             info["host"],
         )
+
     return sock
+
+
 def _filename(url):
     url = url.split("?", 1)[0]
     url = url.split("#", 1)[0]
     url = url.rstrip("/")
+
     if "/" in url:
         name = url.rsplit("/", 1)[1]
+
         if name:
             return name
+
     return "index.html"
+
+
 def _valid_link(link):
     if not link:
         return False
-    if link.startswith((
-        "#",
-        "mailto:",
-        "javascript:",
-        "data:",
-    )):
-        return False
-    return True
+
+    return not link.startswith(
+        (
+            "#",
+            "mailto:",
+            "javascript:",
+            "data:",
+        )
+    )
+
+
 def _join(base, link):
     return http["join_url"](
         base,
         link,
     )
+
+
 class LinkScanner:
+
     def __init__(self):
         self.buf = ""
         self.links = []
+
     def feed(self, data):
-        if not data:
-            return
         try:
             self.buf += data.decode(
                 "utf-8",
                 "ignore",
             )
+
         except Exception:
             return
+
         while True:
             match = re.search(
                 'href=["\']([^"\']+)["\']',
                 self.buf,
             )
+
             if not match:
                 break
-            link = match.group(1)
-            self.links.append(link)
-            consumed = match.group(0)
+
+            self.links.append(
+                match.group(1)
+            )
+
             self.buf = self.buf[
-                len(consumed):
+                len(match.group(0)):
             ]
+
         if len(self.buf) > 256:
             self.buf = self.buf[-128:]
+
+
 def _is_html(response, name):
     content = response.headers.get(
         "content-type",
         "",
     ).lower()
+
     if "text/html" in content:
         return True
+
     name = name.lower()
+
     return (
         name.endswith(".html")
         or name.endswith(".htm")
     )
+
+
 def _download(
     url,
     out,
@@ -172,23 +202,31 @@ def _download(
     response = http["request"](
         url,
         method="GET",
-        headers=headers,
+        headers=headers or {},
         timeout=timeout,
         redirects=redirects,
         connect=_connect,
     )
+
     scanner = None
+
     if _is_html(response, out):
         scanner = LinkScanner()
+
     count = 0
+
     try:
         def writer(f):
             nonlocal count
+
             for chunk in response.body_iter():
                 f.write(chunk)
+
                 count += len(chunk)
+
                 if scanner:
                     scanner.feed(chunk)
+
                 if progress:
                     print(
                         "\r{} bytes".format(
@@ -196,15 +234,24 @@ def _download(
                         ),
                         end="",
                     )
+
             if progress:
                 print()
+
         fsio["atomic_write"](
             out,
             writer,
         )
+
     finally:
         response.close()
-    return scanner
+
+    return (
+        count,
+        scanner,
+    )
+
+
 def _recursive(
     url,
     depth,
@@ -217,30 +264,46 @@ def _recursive(
 ):
     if depth > max_depth:
         return
+
     if state["count"] >= state["max_files"]:
         return
+
     if url in state["seen"]:
         return
+
     if not _valid_link(url):
         return
+
     state["seen"].append(url)
-    name = _filename(url)
+
+    out = _filename(url)
+
     try:
         print(
             "{} -> {}".format(
                 url,
-                name,
+                out,
             )
         )
-        scanner = _download(
+
+        count, scanner = _download(
             url,
-            name,
+            out,
             timeout,
             headers,
             redirects,
             progress,
         )
+
+        item = {
+            "url": url,
+            "output": out,
+            "bytes": count,
+        }
+
+        state["files"].append(item)
         state["count"] += 1
+
     except Exception as e:
         print(
             "wget: {}: {}".format(
@@ -249,13 +312,9 @@ def _recursive(
             )
         )
         return
-    if (
-        scanner
-        and depth < max_depth
-    ):
+
+    if scanner and depth < max_depth:
         for link in scanner.links:
-            if not _valid_link(link):
-                continue
             _recursive(
                 _join(url, link),
                 depth + 1,
@@ -266,6 +325,8 @@ def _recursive(
                 redirects,
                 progress,
             )
+
+
 def main(
     url,
     out=None,
@@ -276,27 +337,38 @@ def main(
     depth=1,
     max_files=16,
     progress=True,
+    collect=False,
 ):
-    if recursive:
-        _recursive(
-            url,
-            0,
-            depth,
-            {
+    try:
+        if recursive:
+            state = {
                 "seen": [],
+                "files": [],
                 "count": 0,
                 "max_files": max_files,
-            },
-            timeout,
-            headers,
-            redirects,
-            progress,
-        )
-        return
-    if out is None:
-        out = _filename(url)
-    try:
-        _download(
+            }
+
+            _recursive(
+                url,
+                0,
+                depth,
+                state,
+                timeout,
+                headers,
+                redirects,
+                progress,
+            )
+
+            if collect:
+                return state["files"]
+
+            return None
+
+
+        if out is None:
+            out = _filename(url)
+
+        count, scanner = _download(
             url,
             out,
             timeout,
@@ -304,6 +376,32 @@ def main(
             redirects,
             progress,
         )
-        print(out)
+
+        if collect:
+            return {
+                "url": url,
+                "output": out,
+                "bytes": count,
+                "links": (
+                    scanner.links
+                    if scanner
+                    else []
+                ),
+            }
+
+        print(
+            "saved: {}".format(
+                out
+            )
+        )
+
+        return None
+
     except Exception as e:
-        print("wget: ", e,)
+        print(
+            "wget: {}".format(
+                e
+            )
+        )
+
+        return False
